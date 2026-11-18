@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f6b5c">
+<title>Shared Songbook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0}
+[hidden]{display:none!important}
+/* Layout: songbook sidebar (lists + library) beside a music-stand reading pane; chord sheets set in mono so chords stay over their syllables. */
+:root{
+  --bg:#f6f5f2; --panel:#ffffff; --ink:#1d2321; --muted:#5f6a66; --line:#dcdfdb;
+  --accent:#0f6b5c; --accent-ink:#ffffff; --chord:#b4430f; --section:#0f6b5c; --soft:#e7efec; --danger:#b3261e; --warn:#fff4d6; --warn-ink:#5b4400;
+  --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --r:8px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121615; --panel:#1a201e; --ink:#e7ecea; --muted:#9aa7a2; --line:#2c3532;
+  --accent:#4fbfa8; --accent-ink:#06211b; --chord:#ffa66b; --section:#4fbfa8; --soft:#1f2b28; --danger:#ff8a80; --warn:#3a3112; --warn-ink:#f5dc93; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121615; --panel:#1a201e; --ink:#e7ecea; --muted:#9aa7a2; --line:#2c3532;
+  --accent:#4fbfa8; --accent-ink:#06211b; --chord:#ffa66b; --section:#4fbfa8; --soft:#1f2b28; --danger:#ff8a80; --warn:#3a3112; --warn-ink:#f5dc93; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.app{display:grid;grid-template-columns:280px minmax(0,1fr);min-height:100vh}
+aside{background:var(--panel);border-right:1px solid var(--line);padding-block:20px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:16px;display:flex;flex-direction:column;gap:18px}
+main{padding-block:24px;padding-left:28px;padding-right:max(16px,env(safe-area-inset-right,0px));min-width:0}
+.brand{font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px;cursor:pointer}
+.brand svg{flex:none}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+h1{font-size:28px;font-weight:700} h2{font-size:20px;font-weight:700} h3{font-size:15px;font-weight:600}
+.label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.stack{display:flex;flex-direction:column;gap:8px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.grow{flex:1;min-width:0}
+button,.btn{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:var(--r);padding:7px 12px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;line-height:1.2}
+button:hover,.btn:hover{border-color:var(--accent)}
+button:focus-visible,.btn:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,.navitem:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
+button.ghost{border-color:transparent;background:transparent}
+button.danger{color:var(--danger)}
+button.danger.armed{background:var(--danger);color:var(--panel);border-color:var(--danger)}
+button:disabled{opacity:.5;cursor:default}
+input,textarea,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:var(--r);padding:8px 10px;width:100%}
+textarea{font-family:var(--f-mono);font-size:13px;line-height:1.45;resize:vertical;white-space:pre;overflow-wrap:normal;overflow-x:auto}
+.navitem{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--r);cursor:pointer;color:var(--ink);border:none;background:none;width:100%;text-align:left;font-size:14px}
+.navitem:hover{background:var(--soft)}
+.navitem.active{background:var(--soft);font-weight:600;color:var(--accent)}
+.navitem .count{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.banner{background:var(--warn);color:var(--warn-ink);border-radius:var(--r);padding:8px 12px;font-size:13px}
+.status{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)} .dot.on{background:var(--accent)}
+.page{max-width:900px;display:flex;flex-direction:column;gap:20px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px}
+.songrow{display:grid;grid-template-columns:28px minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--line)}
+.songrow:last-child{border-bottom:none}
+.songrow .num{color:var(--muted);font-variant-numeric:tabular-nums;text-align:right;font-size:13px}
+.songrow .t{font-weight:600;cursor:pointer}
+.songrow .t:hover{color:var(--accent)}
+.songrow .a{color:var(--muted);font-size:13px}
+.keychip{font-family:var(--f-mono);font-size:12px;background:var(--soft);color:var(--accent);border-radius:999px;padding:2px 9px;white-space:nowrap}
+.tools{display:flex;gap:4px}
+.tools button{padding:4px 8px}
+.sites{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.site{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg);color:var(--ink);text-decoration:none}
+.site:hover{border-color:var(--accent)}
+.site b{font-size:14px} .site span{font-size:12px;color:var(--muted)}
+.site.off{pointer-events:none;opacity:.45}
+.sheetbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding-block:10px;z-index:5;border-bottom:1px solid var(--line)}
+.transpose{display:flex;align-items:center;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px}
+.transpose button{border:none;border-radius:999px;width:34px;height:30px;justify-content:center;padding:0;font-size:18px;font-weight:600}
+.transpose .val{font-family:var(--f-mono);font-size:13px;min-width:92px;text-align:center;font-variant-numeric:tabular-nums}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.seg button{border:none;border-radius:0;padding:6px 10px;font-size:13px}
+.seg button.on{background:var(--soft);color:var(--accent);font-weight:600}
+.sheet-wrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px}
+.sheet{font-family:var(--f-mono);font-size:var(--sheet-size,15px);line-height:1.35;margin:0;white-space:pre;tab-size:4}
+.sheet .cl{color:var(--chord);font-weight:700}
+.sheet .sec{color:var(--section);font-family:var(--f-display);font-weight:700;display:inline-block;margin-top:.6em}
+.sheet .gap{display:block;height:.5em}
+.meta{color:var(--muted)}
+.empty{color:var(--muted);padding:24px;text-align:center;border:1px dashed var(--line);border-radius:12px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:var(--r);font-size:14px;z-index:50;max-width:calc(100% - 32px)}
+.hint{font-size:13px;color:var(--muted)}
+.steps{counter-reset:s}
+.step-h{display:flex;gap:10px;align-items:baseline}
+.step-n{font-family:var(--f-display);font-weight:700;color:var(--accent);font-size:18px}
+.menu-toggle{display:none}
+.spin{width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sp 0.8s linear infinite;flex:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+details summary{list-style-position:inside}
+@media (max-width:760px){
+  .app{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  aside{border-right:none;border-bottom:1px solid var(--line);padding-right:max(16px,env(safe-area-inset-right,0px))}
+  aside.collapsed .collapsible{display:none}
+  .menu-toggle{display:inline-flex}
+  main{padding-left:max(16px,env(safe-area-inset-left,0px))}
+  .sheet-wrap{padding:14px}
+  .songrow{grid-template-columns:22px minmax(0,1fr) auto}
+  .songrow .tools{grid-column:2 / -1}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside id="side">
+    <div class="row" style="justify-content:space-between">
+      <div class="brand" id="brand" tabindex="0" role="link" aria-label="Songbook home">
+        <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><rect x="3" y="2" width="20" height="22" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 8h10M8 12h10M8 16h6" stroke="var(--chord)" stroke-width="2" stroke-linecap="round"/></svg>
+        Songbook
+      </div>
+      <button class="menu-toggle ghost" id="menuToggle" aria-expanded="false">Menu</button>
+    </div>
+    <div class="collapsible stack" style="gap:18px">
+      <button class="primary" id="goFind">Find a song</button>
+      <div class="stack" style="gap:4px">
+        <div class="row" style="justify-content:space-between"><span class="label">Lists</span><button class="ghost" id="newListBtn" style="padding:2px 6px;font-size:13px">+ New list</button></div>
+        <form id="newListForm" class="row" hidden><input id="newListName" class="grow" placeholder="List name, e.g. Sunday set" maxlength="80"><button class="primary" type="submit">Add</button></form>
+        <nav id="listNav" class="stack" style="gap:2px"></nav>
+      </div>
+      <div class="stack" style="gap:4px">
+        <span class="label">Library</span>
+        <button class="navitem" id="goLibrary"><span>All songs</span><span class="count" id="libCount">0</span></button>
+      </div>
+      <div class="stack" style="gap:6px">
+        <span class="label">Chord names</span>
+        <div class="seg" role="group" aria-label="Chord notation">
+          <button data-not="auto" class="on">As written</button><button data-not="abc">C D E</button><button data-not="latin">Do Re Mi</button>
+        </div>
+      </div>
+      <div class="status" id="status"><span class="dot"></span><span>Connecting…</span></div>
+    </div>
+  </aside>
+  <main id="main"></main>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script src="chords.js"></script>
+<script>
+(function(){
+"use strict";
+/* ---------------- store: songbook server, or this browser only ---------------- */
+const {isChordLine,isSection,detectKey,transposeChordLine,transposeBody,sheetOpts,keyLabel,importText}=window.Chords;
+const LS_KEY="songbook-local-v1";
+const API=location.protocol==="file:"?null:"api";
+function editKey(){try{return localStorage.getItem("songbook-key")||""}catch(e){return ""}}
+async function api(method,path,body){
+  const r=await fetch(API+"/"+path,{method,headers:{"Content-Type":"application/json","X-Edit-Key":editKey()},body:body?JSON.stringify(body):undefined,cache:"no-store"});
+  if(!r.ok){let msg="";try{msg=(await r.json()).error}catch(e){}const err=new Error(msg||("HTTP "+r.status));err.status=r.status;throw err}
+  return r.status===204?null:r.json();
+}
+const store={
+  mode:"pending", songs:new Map(), lists:new Map(), listeners:[],
+  emit(){this.listeners.forEach(f=>f())},
+  loadLocal(){try{const d=JSON.parse(localStorage.getItem(LS_KEY)||"{}");this.songs=new Map(Object.entries(d.songs||{}));this.lists=new Map(Object.entries(d.lists||{}))}catch(e){}},
+  saveLocal(){try{localStorage.setItem(LS_KEY,JSON.stringify({songs:Object.fromEntries(this.songs),lists:Object.fromEntries(this.lists)}))}catch(e){}},
+  fill(d){this.songs=new Map(Object.entries(d.songs||{}));this.lists=new Map(Object.entries(d.lists||{}))},
+  async save(coll,id,data){
+    data.updatedAt=Date.now();
+    const map=coll==="songs"?this.songs:this.lists;const prev=map.get(id);
+    map.set(id,data);this.emit();
+    if(this.mode==="shared"){
+      try{await api("PUT",coll+"/"+id,data)}
+      catch(e){if(prev)map.set(id,prev);else map.delete(id);this.emit();writeError(e);throw e}
+    } else this.saveLocal();
+  },
+  async remove(coll,id){
+    const map=coll==="songs"?this.songs:this.lists;const prev=map.get(id);
+    map.delete(id);this.emit();
+    if(this.mode==="shared"){
+      try{await api("DELETE",coll+"/"+id)}
+      catch(e){if(prev)map.set(id,prev);this.emit();writeError(e);throw e}
+    } else this.saveLocal();
+  }
+};
+function writeError(e){
+  if(e&&e.status===401){state.needKey=true;render();toast("Enter the edit password, then try again.")}
+  else toast("That change was not saved: "+((e&&e.message)||"connection problem")+". Try again.");
+}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+function serverOK(){return store.mode==="shared"}
+async function initStore(){
+  if(!API){store.mode="local";store.loadLocal();setStatus(false);store.emit();return}
+  try{
+    const d=await api("GET","state");
+    store.fill(d);store.mode="shared";state.keyRequired=!!d.keyRequired;setStatus(true);store.emit();
+    const es=new EventSource("api/events");
+    es.onopen=()=>setStatus(true);
+    es.onerror=()=>setStatus(false,"Reconnecting to the server…");
+    es.onmessage=ev=>{
+      let m;try{m=JSON.parse(ev.data)}catch(e){return}
+      if(m.type==="state")store.fill(m);
+      else if(m.type==="change"){const map=m.coll==="songs"?store.songs:store.lists;if(m.data)map.set(m.id,m.data);else map.delete(m.id)}
+      store.emit();
+    };
+  }catch(e){store.mode="local";store.loadLocal();setStatus(false);store.emit()}
+}
+function setStatus(ok,msg){
+  const el=document.getElementById("status");
+  if(store.mode==="local"){el.innerHTML='<span class="dot"></span><span>Saved in this browser only</span>';return}
+  el.innerHTML='<span class="dot '+(ok?"on":"")+'"></span><span>'+esc(msg||(ok?"Shared · live for everyone":"Connecting…"))+'</span>';
+}
+
+/* ---------------- automatic search through the server ---------------- */
+async function autoSearch(){
+  const f=state.find,q=f.q.trim();if(!q)return;
+  f.busy="search";f.results=null;f.status="Searching the web for “"+q+"”…";render();
+  try{
+    const d=await api("GET","search?q="+encodeURIComponent(q));
+    const results=(d.results||[]).map(r=>({url:r.url,host:r.host,label:r.title||r.url}));
+    if(!results.length){f.busy=false;f.status="No chord pages found for “"+q+"”. Add the artist's name or check the spelling.";render();return}
+    f.results=results;await loadResult(0);
+  }catch(e){f.busy=false;f.status=e.status===401?"Enter the edit password to search.":"The search failed: "+e.message;if(e.status===401)state.needKey=true;render()}
+}
+async function loadResult(i){
+  const f=state.find,r=f.results[i];
+  f.busy="load";f.loaded=i;f.status="Reading "+r.host+"…";render();
+  try{
+    const d=await api("GET","song?url="+encodeURIComponent(r.url));
+    const imp=importText(d.body||"");
+    f.paste=imp.body;f.title=d.title||imp.title||r.label;f.artist=d.artist||imp.artist||"";f.key=d.key||imp.key||"";f.source=r.url;
+    f.busy=false;f.status="Loaded from "+r.host+". Check the preview, then save.";
+  }catch(e){f.busy=false;f.status="Could not read that page ("+e.message+"). Try another version from the list."}
+  render();
+}
+
+/* ---------------- ui state ---------------- */
+const state={
+  view:{type:"home"}, transpose:{}, readOnly:false,
+  notation:(()=>{try{return localStorage.getItem("songbook-notation")||"auto"}catch(e){return "auto"}})(),
+  size:(()=>{try{return +localStorage.getItem("songbook-size")||15}catch(e){return 15}})(),
+  find:{q:"",paste:"",title:"",artist:"",key:"",listId:"",busy:false},
+  lastList:null
+};
+const $=s=>document.querySelector(s);
+const main=$("#main");
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+let toastT;function toast(m){const t=$("#toast");t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,3500)}
+function byTitle(a,b){return (a[1].title||"").localeCompare(b[1].title||"",undefined,{sensitivity:"base"})}
+function go(hash){ if(location.hash===hash)route();else location.hash=hash }
+function route(){
+  const h=location.hash.slice(1);let m;
+  if(h==="find")state.view={type:"find"};
+  else if(h==="library")state.view={type:"library"};
+  else if((m=h.match(/^list-([a-z0-9]+)$/)))state.view={type:"list",id:m[1]};
+  else if((m=h.match(/^song-([a-z0-9]+)$/)))state.view={type:"song",id:m[1]};
+  else if((m=h.match(/^edit-([a-z0-9]+)$/)))state.view={type:"edit",id:m[1]};
+  else state.view={type:"home"};
+  if(state.view.type==="list")state.lastList=state.view.id;
+  if(state.view.type!=="edit"){main.dataset.editing="";editDraft=null}
+  $("#side").classList.add("collapsed");$("#menuToggle").setAttribute("aria-expanded","false");
+  render();window.scrollTo(0,0);
+}
+window.addEventListener("hashchange",route);
+
+/* two-step delete confirm (dialogs are unavailable) */
+function armable(btn,label,fn){
+  btn.addEventListener("click",()=>{
+    if(btn.classList.contains("armed")){fn();return}
+    btn.classList.add("armed");const old=btn.textContent;btn.textContent=label;
+    setTimeout(()=>{btn.classList.remove("armed");btn.textContent=old},3000);
+  });
+}
+
+/* ---------------- sidebar ---------------- */
+function renderSide(){
+  const nav=$("#listNav");
+  const lists=[...store.lists.entries()].sort((a,b)=>(a[1].name||"").localeCompare(b[1].name||""));
+  nav.innerHTML=lists.length?lists.map(([id,l])=>`<button class="navitem ${state.view.type==="list"&&state.view.id===id?"active":""}" data-list="${id}"><span>${esc(l.name||"Untitled list")}</span><span class="count">${(l.items||[]).length}</span></button>`).join(""):'<div class="hint" style="padding:4px 10px">No lists yet.</div>';
+  nav.querySelectorAll("[data-list]").forEach(b=>b.onclick=()=>go("#list-"+b.dataset.list));
+  $("#libCount").textContent=store.songs.size;
+  $("#goLibrary").classList.toggle("active",state.view.type==="library");
+  document.querySelectorAll("[data-not]").forEach(b=>b.classList.toggle("on",b.dataset.not===state.notation));
+  $("#newListBtn").hidden=state.readOnly;
+}
+
+/* ---------------- views ---------------- */
+function render(){
+  renderSide();
+  const v=state.view;
+  let banner=store.mode==="local"?`<div class="banner">No songbook server found, so changes are kept in this browser only. Start the server (<code>node server.js</code>) to share lists and search automatically.</div>`:"";
+  if(state.needKey)banner+=`<form class="banner row" id="keyForm"><label for="keyInput">This songbook needs the edit password to make changes.</label><input id="keyInput" type="password" autocomplete="current-password" style="max-width:220px"><button class="primary">Save password</button></form>`;
+  setTimeout(wireKeyForm,0);
+  if(v.type==="find")return renderFind(banner);
+  if(v.type==="library")return renderLibrary(banner);
+  if(v.type==="list")return renderList(banner,v.id);
+  if(v.type==="song")return renderSong(banner,v.id);
+  if(v.type==="edit")return renderEdit(banner,v.id);
+  renderHome(banner);
+}
+
+function wireKeyForm(){
+  const f=document.getElementById("keyForm");if(!f||f.dataset.wired)return;f.dataset.wired="1";
+  f.onsubmit=e=>{e.preventDefault();try{localStorage.setItem("songbook-key",document.getElementById("keyInput").value)}catch(_){}state.needKey=false;render();toast("Password saved. Try the change again.")};
+}
+function renderHome(banner){
+  const lists=[...store.lists.entries()].sort((a,b)=>(b[1].updatedAt||0)-(a[1].updatedAt||0));
+  main.innerHTML=`<div class="page">${banner}
+    <div class="stack"><h1>Your shared songbook</h1><p class="meta" style="margin:0;max-width:62ch">Keep set lists with lyrics and chords, transpose any song in semitones, and edit together. Everyone who opens this songbook sees the same lists and songs.</p></div>
+    <div class="row"><button class="primary" id="hFind">Find a song</button>${state.readOnly?"":'<button id="hNew">New list</button><button id="hBlank">Write a song from scratch</button>'}</div>
+    <div class="stack"><span class="label">Lists</span>
+    ${lists.length?`<div class="grid2">${lists.map(([id,l])=>`<button class="card" data-open="${id}" style="text-align:left;display:flex;flex-direction:column;gap:4px;align-items:flex-start"><h3>${esc(l.name||"Untitled list")}</h3><span class="hint">${(l.items||[]).length} song${(l.items||[]).length===1?"":"s"}</span></button>`).join("")}</div>`:
+    `<div class="empty">No lists yet. Create a list, then use <b>Find a song</b> to add songs with lyrics and chords.</div>`}</div>
+  </div>`;
+  $("#hFind").onclick=()=>go("#find");
+  if($("#hNew"))$("#hNew").onclick=()=>{showNewList()};
+  if($("#hBlank"))$("#hBlank").onclick=newBlankSong;
+  main.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>go("#list-"+b.dataset.open));
+}
+
+function showNewList(){$("#side").classList.remove("collapsed");$("#newListForm").hidden=false;$("#newListName").focus()}
+async function newBlankSong(){
+  const id=uid();
+  try{await store.save("songs",id,{title:"New song",artist:"",key:"",body:"[Verse]\nC              G\nType the lyrics here and put\nAm             F\nthe chords on the line above",createdAt:Date.now()});go("#edit-"+id)}catch(e){}
+}
+
+function songRows(ids,ctx){
+  return ids.map((id,i)=>{
+    const s=store.songs.get(id);
+    if(!s)return `<div class="songrow"><span class="num">${i+1}</span><span class="a">This song was deleted.</span><span></span><div class="tools">${ctx.list&&!state.readOnly?`<button data-rm="${i}" title="Remove from list">Remove</button>`:""}</div></div>`;
+    return `<div class="songrow"><span class="num">${ctx.list?i+1:""}</span>
+      <div style="min-width:0"><div class="t" data-song="${id}" tabindex="0">${esc(s.title||"Untitled")}</div><div class="a">${esc(s.artist||"")}</div></div>
+      <span>${s.key||detectKey(s.body)?`<span class="keychip">${esc(s.key||detectKey(s.body))}</span>`:""}</span>
+      <div class="tools">${ctx.list&&!state.readOnly?`<button data-up="${i}" title="Move up" aria-label="Move up" ${i===0?"disabled":""}>↑</button><button data-down="${i}" title="Move down" aria-label="Move down" ${i===ids.length-1?"disabled":""}>↓</button><button data-rm="${i}" title="Remove from list">Remove</button>`:""}
+      ${ctx.addTo&&!state.readOnly?`<button data-add="${id}">Add to list</button>`:""}</div></div>`;
+  }).join("");
+}
+function wireSongRows(){
+  main.querySelectorAll("[data-song]").forEach(el=>{const f=()=>go("#song-"+el.dataset.song);el.onclick=f;el.onkeydown=e=>{if(e.key==="Enter")f()}});
+}
+
+function renderList(banner,id){
+  const l=store.lists.get(id);
+  if(!l){main.innerHTML=`<div class="page">${banner}<div class="empty">${store.mode==="pending"?"Loading…":"This list does not exist or was deleted."}</div></div>`;return}
+  const items=l.items||[];
+  const others=[...store.songs.entries()].filter(([sid])=>!items.includes(sid)).sort(byTitle);
+  main.innerHTML=`<div class="page">${banner}
+    <div class="row" style="justify-content:space-between;align-items:flex-end">
+      <div class="stack" style="gap:2px;min-width:0"><span class="label">List</span>
+        <h1 id="lname">${esc(l.name||"Untitled list")}</h1></div>
+      ${state.readOnly?"":`<div class="row"><button id="rename">Rename</button><button class="danger" id="delList">Delete list</button></div>`}
+    </div>
+    <form id="renameForm" class="row" hidden><input id="renameInput" class="grow" maxlength="80" value="${esc(l.name||"")}"><button class="primary">Save name</button></form>
+    <div class="card" style="padding:6px 14px">${items.length?songRows(items,{list:true}):`<div class="empty" style="border:none">This list is empty. Find a song online or add one from your library.</div>`}</div>
+    ${state.readOnly?"":`<div class="row"><button class="primary" id="lFind">Find a song for this list</button>
+      ${others.length?`<select id="addLib" class="grow" style="max-width:340px" aria-label="Add a song from the library"><option value="">Add from library…</option>${others.map(([sid,s])=>`<option value="${sid}">${esc(s.title)}${s.artist?" · "+esc(s.artist):""}</option>`).join("")}</select>`:""}</div>`}
+  </div>`;
+  wireSongRows();
+  const saveItems=async arr=>{try{await store.save("lists",id,{...l,items:arr})}catch(e){}};
+  main.querySelectorAll("[data-up]").forEach(b=>b.onclick=()=>{const i=+b.dataset.up,a=[...items];[a[i-1],a[i]]=[a[i],a[i-1]];saveItems(a)});
+  main.querySelectorAll("[data-down]").forEach(b=>b.onclick=()=>{const i=+b.dataset.down,a=[...items];[a[i+1],a[i]]=[a[i],a[i+1]];saveItems(a)});
+  main.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{const a=[...items];a.splice(+b.dataset.rm,1);saveItems(a)});
+  if($("#addLib"))$("#addLib").onchange=e=>{if(e.target.value)saveItems([...items,e.target.value])};
+  if($("#lFind"))$("#lFind").onclick=()=>{state.find.listId=id;go("#find")};
+  if($("#rename")){
+    $("#rename").onclick=()=>{$("#renameForm").hidden=false;$("#renameInput").focus()};
+    $("#renameForm").onsubmit=async e=>{e.preventDefault();const n=$("#renameInput").value.trim();if(n){try{await store.save("lists",id,{...l,name:n})}catch(_){}}};
+    armable($("#delList"),"Click again to delete",async()=>{try{await store.remove("lists",id);toast("List deleted. Its songs stay in the library.");go("#")}catch(e){}});
+  }
+}
+
+function renderLibrary(banner){
+  const q=(state.libQ||"").toLowerCase();
+  const all=[...store.songs.entries()].filter(([,s])=>!q||((s.title||"")+" "+(s.artist||"")).toLowerCase().includes(q)).sort(byTitle);
+  main.innerHTML=`<div class="page">${banner}
+    <div class="row" style="justify-content:space-between;align-items:flex-end"><h1>All songs</h1>${state.readOnly?"":'<button id="blank">Write a song from scratch</button>'}</div>
+    <input id="libQ" placeholder="Filter by title or artist" value="${esc(state.libQ||"")}">
+    <div class="card" style="padding:6px 14px">${all.length?songRows(all.map(e=>e[0]),{}):`<div class="empty" style="border:none">${store.songs.size?"No songs match that filter.":"No songs yet. Use Find a song to add the first one."}</div>`}</div>
+  </div>`;
+  wireSongRows();
+  const inp=$("#libQ");inp.oninput=()=>{state.libQ=inp.value;const p=inp.selectionStart;renderLibrary(banner);const n=$("#libQ");n.focus();n.setSelectionRange(p,p)};
+  if($("#blank"))$("#blank").onclick=newBlankSong;
+}
+
+function renderSheet(song,semi){
+  const o=sheetOpts(song,semi,state.notation);
+  const lines=(song.body||"").split("\n");
+  return lines.map(l=>{
+    if(!l.trim())return '<span class="gap"></span>';
+    if(isSection(l))return '<span class="sec">'+esc(l.trim().replace(/^\[|\]$/g,""))+'</span>';
+    if(isChordLine(l))return transposeChordLine(l,o).map(p=>p.chord?'<span class="cl">'+esc(p.text)+'</span>':esc(p.text)).join("");
+    return esc(l);
+  }).join("\n");
+}
+
+function renderSong(banner,id){
+  const s=store.songs.get(id);
+  if(!s){main.innerHTML=`<div class="page">${banner}<div class="empty">${store.mode==="pending"?"Loading…":"This song does not exist or was deleted."}</div></div>`;return}
+  const semi=state.transpose[id]||0;
+  const list=state.lastList&&store.lists.get(state.lastList);
+  const items=list?(list.items||[]):[];const pos=items.indexOf(id);
+  const prev=pos>0?items[pos-1]:null,next=pos>=0&&pos<items.length-1?items[pos+1]:null;
+  const orig=s.key||detectKey(s.body);
+  const now=keyLabel(s,semi,state.notation);
+  const inLists=[...store.lists.entries()].filter(([,l])=>(l.items||[]).includes(id));
+  const notIn=[...store.lists.entries()].filter(([,l])=>!(l.items||[]).includes(id));
+  main.innerHTML=`<div class="page" style="max-width:1000px">${banner}
+    <div class="stack" style="gap:4px">
+      ${pos>=0?`<a class="hint" href="#list-${state.lastList}" style="color:var(--accent)">← ${esc(list.name)} · song ${pos+1} of ${items.length}</a>`:""}
+      <h1>${esc(s.title||"Untitled")}</h1>
+      <div class="meta">${[s.artist?esc(s.artist):"",orig?`Original key <span class="keychip">${esc(orig)}</span>`:"",inLists.length?`In ${inLists.map(([lid,l])=>`<a href="#list-${lid}" style="color:var(--accent)">${esc(l.name)}</a>`).join(", ")}`:""].filter(Boolean).join(" · ")}</div>
+    </div>
+    <div class="sheetbar">
+      <div class="row">
+        <div class="transpose" role="group" aria-label="Transpose">
+          <button id="tDown" aria-label="Down one semitone" title="Down one semitone">−</button>
+          <span class="val" aria-live="polite">${semi>0?"+":""}${semi} st${now?" · "+esc(now):""}</span>
+          <button id="tUp" aria-label="Up one semitone" title="Up one semitone">+</button>
+        </div>
+        ${semi?`<button id="tReset" class="ghost">Reset</button>`:""}
+        ${semi&&!state.readOnly?`<button id="tSave" title="Rewrite the song's chords in this key for everyone">Save in this key</button>`:""}
+      </div>
+      <div class="row">
+        <div class="seg" role="group" aria-label="Text size"><button id="szDown" aria-label="Smaller text">A−</button><button id="szUp" aria-label="Larger text">A+</button></div>
+        ${state.readOnly?"":`<button id="edit">Edit</button>`}
+      </div>
+    </div>
+    <div class="sheet-wrap"><pre class="sheet" style="--sheet-size:${state.size}px">${renderSheet(s,semi)}</pre></div>
+    <div class="row" style="justify-content:space-between">
+      <div class="row">${prev?`<button data-nav="${prev}">← ${esc((store.songs.get(prev)||{}).title||"Previous")}</button>`:""}${next?`<button data-nav="${next}">${esc((store.songs.get(next)||{}).title||"Next")} →</button>`:""}</div>
+      ${!state.readOnly&&notIn.length?`<select id="addToList" style="max-width:260px" aria-label="Add this song to a list"><option value="">Add to a list…</option>${notIn.map(([lid,l])=>`<option value="${lid}">${esc(l.name)}</option>`).join("")}</select>`:""}
+    </div>
+    ${s.source?`<p class="hint" style="margin:0">Source: ${/^https?:\/\//.test(s.source)?`<a href="${esc(s.source)}" target="_blank" rel="noopener" style="color:var(--accent)">${esc(s.source)}</a>`:esc(s.source)}</p>`:""}
+  </div>`;
+  const setSemi=v=>{v=((v+11)%12+12)%12-11;if(v>6)v-=12;if(v<-6)v+=12;state.transpose[id]=v;renderSong(banner,id)};
+  $("#tUp").onclick=()=>setSemi(semi+1);$("#tDown").onclick=()=>setSemi(semi-1);
+  if($("#tReset"))$("#tReset").onclick=()=>setSemi(0);
+  if($("#tSave"))$("#tSave").onclick=async()=>{
+    const o=sheetOpts(s,semi,"auto");
+    const nb=transposeBody(s.body,o);const nk=keyLabel(s,semi,"auto");
+    try{await store.save("songs",id,{...s,body:nb,key:nk});state.transpose[id]=0;toast("Saved in "+nk+" for everyone.")}catch(e){}
+  };
+  const setSize=d=>{state.size=Math.min(28,Math.max(10,state.size+d));try{localStorage.setItem("songbook-size",state.size)}catch(e){};main.querySelector(".sheet").style.setProperty("--sheet-size",state.size+"px")};
+  $("#szUp").onclick=()=>setSize(1);$("#szDown").onclick=()=>setSize(-1);
+  if($("#edit"))$("#edit").onclick=()=>go("#edit-"+id);
+  main.querySelectorAll("[data-nav]").forEach(b=>b.onclick=()=>go("#song-"+b.dataset.nav));
+  if($("#addToList"))$("#addToList").onchange=async e=>{const lid=e.target.value;const l=store.lists.get(lid);if(l){try{await store.save("lists",lid,{...l,items:[...(l.items||[]),id]});toast("Added to "+l.name+".")}catch(_){}}};
+}
+
+let editDraft=null;
+function renderEdit(banner,id){
+  const s=store.songs.get(id);
+  if(!s){main.innerHTML=`<div class="page">${banner}<div class="empty">${store.mode==="pending"?"Loading…":"This song does not exist or was deleted."}</div></div>`;return}
+  if(state.readOnly){go("#song-"+id);return}
+  if(!editDraft||editDraft.id!==id)editDraft={id,base:s.updatedAt,title:s.title||"",artist:s.artist||"",key:s.key||"",body:s.body||"",source:s.source||""};
+  // keep typing intact on live updates: only render once per song open
+  if(main.dataset.editing===id){
+    const w=$("#editWarn");if(w)w.hidden=!(s.updatedAt&&s.updatedAt!==editDraft.base);
+    return;
+  }
+  main.dataset.editing=id;
+  main.innerHTML=`<div class="page">${banner}
+    <div class="row" style="justify-content:space-between"><h1>Edit song</h1><div class="row"><button id="cancel">Cancel</button><button class="primary" id="save">Save for everyone</button></div></div>
+    <div class="banner" id="editWarn" hidden>Someone else saved this song while you were editing. Saving now replaces their version.</div>
+    <div class="grid2">
+      <label class="stack" style="gap:4px"><span class="label">Title</span><input id="eTitle" value="${esc(editDraft.title)}"></label>
+      <label class="stack" style="gap:4px"><span class="label">Artist</span><input id="eArtist" value="${esc(editDraft.artist)}"></label>
+      <label class="stack" style="gap:4px"><span class="label">Key</span><input id="eKey" value="${esc(editDraft.key)}" placeholder="e.g. G or Em"></label>
+      <label class="stack" style="gap:4px"><span class="label">Source link</span><input id="eSource" value="${esc(editDraft.source)}" placeholder="Where the chords came from"></label>
+    </div>
+    <label class="stack" style="gap:4px"><span class="label">Lyrics and chords</span>
+      <textarea id="eBody" rows="22" spellcheck="false">${esc(editDraft.body)}</textarea></label>
+    <p class="hint" style="margin:0">Put chords on their own line directly above the syllable they fall on. Section names like <code>[Chorus]</code> or <code>Verse 2:</code> are highlighted. Pasting ChordPro (<code>[G]words</code>) converts it automatically.</p>
+    <div class="row" style="justify-content:space-between"><button id="conv">Convert ChordPro / pasted format</button><button class="danger" id="delSong">Delete song everywhere</button></div>
+  </div>`;
+  const bind=(sel,k)=>{$(sel).oninput=e=>editDraft[k]=e.target.value};
+  bind("#eTitle","title");bind("#eArtist","artist");bind("#eKey","key");bind("#eBody","body");bind("#eSource","source");
+  const leave=()=>{main.dataset.editing="";editDraft=null;go("#song-"+id)};
+  $("#cancel").onclick=leave;
+  $("#conv").onclick=()=>{const r=importText(editDraft.body);editDraft.body=r.body;$("#eBody").value=r.body;if(!editDraft.title&&r.title){editDraft.title=r.title;$("#eTitle").value=r.title}if(!editDraft.key&&r.key){editDraft.key=r.key;$("#eKey").value=r.key}};
+  $("#save").onclick=async()=>{
+    const cur=store.songs.get(id)||{};
+    try{await store.save("songs",id,{...cur,title:editDraft.title.trim()||"Untitled",artist:editDraft.artist.trim(),key:editDraft.key.trim(),body:editDraft.body.replace(/\s+$/,""),source:editDraft.source.trim()});toast("Saved.");leave()}catch(e){}
+  };
+  armable($("#delSong"),"Click again to delete everywhere",async()=>{
+    try{
+      for(const [lid,l] of store.lists){ if((l.items||[]).includes(id)) await store.save("lists",lid,{...l,items:l.items.filter(x=>x!==id)}) }
+      await store.remove("songs",id);main.dataset.editing="";editDraft=null;toast("Song deleted.");go("#library");
+    }catch(e){}
+  });
+}
+
+/* ---------------- find ---------------- */
+const SITES=[
+  {name:"Ultimate Guitar",note:"Largest chord library",url:q=>"https://www.ultimate-guitar.com/search.php?search_type=title&value="+q},
+  {name:"Cifra Club",note:"Portuguese & Spanish, many versions",url:q=>"https://www.cifraclub.com/?q="+q},
+  {name:"La Cuerda",note:"Spanish-language songs",url:q=>"https://acordes.lacuerda.net/busca.php?exp="+q},
+  {name:"E-Chords",note:"Chords & tabs",url:q=>"https://www.e-chords.com/search-all/"+q},
+  {name:"Chordify",note:"Chords detected from audio",url:q=>"https://chordify.net/search/"+q},
+  {name:"Web: chords",note:"Any site, English",url:q=>"https://duckduckgo.com/?q="+q+"+chords+lyrics"},
+  {name:"Web: acordes",note:"Any site, Spanish",url:q=>"https://duckduckgo.com/?q="+q+"+acordes+letra"},
+  {name:"Google",note:"Chords and lyrics",url:q=>"https://www.google.com/search?q="+q+"+chords+lyrics"}
+];
+function renderFind(banner){
+  const f=state.find;
+  const q=f.q.trim();const enc=encodeURIComponent(q).replace(/%20/g,"+");
+  const lists=[...store.lists.entries()].sort((a,b)=>(a[1].name||"").localeCompare(b[1].name||""));
+  if(f.listId&&!store.lists.has(f.listId))f.listId="";
+  const ql=q.toLowerCase();
+  const have=q?[...store.songs.entries()].filter(([,s])=>ql.split(/\s+/).every(w=>((s.title||"")+" "+(s.artist||"")).toLowerCase().includes(w))).sort(byTitle):[];
+  main.innerHTML=`<div class="page">${banner}
+    <div class="stack"><h1>Find a song</h1><p class="meta" style="margin:0;max-width:64ch">Type a song and artist. The songbook searches the web, opens the best chord page, extracts the lyrics and chords, and shows them below so you can check and save them. Pick another version from the results if the first one is not right.</p></div>
+    <div class="card stack" style="gap:12px">
+      <div class="step-h"><span class="step-n">1</span><h2>Search</h2></div>
+      <form id="qForm" class="row"><input id="q" class="grow" placeholder="Song title and artist, e.g. Hallelujah Leonard Cohen" value="${esc(f.q)}" autocomplete="off"><button class="primary" ${f.busy?"disabled":""}>${serverOK()?"Search and load":"Search"}</button></form>
+      <div id="haveBox">${have.length?`<div class="stack" style="gap:4px"><span class="label">Already in your songbook</span><div style="padding:0 6px">${songRows(have.map(e=>e[0]),{addTo:false})}</div></div>`:""}</div>
+      <div id="autoBox" class="stack" style="gap:8px">
+        ${!serverOK()?`<p class="hint" style="margin:0">Automatic search needs the songbook server (<code>node server.js</code>). Without it, copy a chord sheet from one of the sites below and paste it in step 2.</p>`:""}
+        ${f.status?`<div class="row" aria-live="polite">${f.busy?'<span class="spin" aria-hidden="true"></span>':""}<span>${esc(f.status)}</span></div>`:""}
+        ${f.results&&f.results.length?`<div class="stack" style="gap:4px"><span class="label">Versions found</span>${f.results.map((r,i)=>`<button class="navitem ${f.loaded===i?"active":""}" data-res="${i}" ${f.busy?"disabled":""}><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.label)}</span><span class="count">${esc(r.host)}</span></button>`).join("")}</div>`:""}
+      </div>
+      <details ${!serverOK()?"open":""}><summary class="hint" style="cursor:pointer">Search a chord site by hand</summary>
+      <div class="sites" id="sites" style="margin-top:8px">${SITES.map(s=>`<a class="site ${q?"":"off"}" target="_blank" rel="noopener" href="${q?esc(s.url(enc)):"#"}"><b>${esc(s.name)} ↗</b><span>${esc(s.note)}</span></a>`).join("")}</div></details>
+    </div>
+    ${state.readOnly?"":`<div class="card stack" style="gap:12px">
+      <div class="step-h"><span class="step-n">2</span><h2>Paste and save</h2></div>
+      <textarea id="paste" rows="12" spellcheck="false" placeholder="Paste the lyrics with chords here. Chord-over-lyrics text, ChordPro ([G]words) and Ultimate Guitar copies all work.">${esc(f.paste)}</textarea>
+      <div class="row">
+        <span class="hint">The search fills this box. You can also paste a chord sheet yourself, or fix the text before saving.</span>
+      </div>
+      <div class="grid2">
+        <label class="stack" style="gap:4px"><span class="label">Title</span><input id="fTitle" value="${esc(f.title)}"></label>
+        <label class="stack" style="gap:4px"><span class="label">Artist</span><input id="fArtist" value="${esc(f.artist)}"></label>
+        <label class="stack" style="gap:4px"><span class="label">Key</span><input id="fKey" value="${esc(f.key)}" placeholder="Detected from chords"></label>
+        <label class="stack" style="gap:4px"><span class="label">Add to list</span><select id="fList"><option value="">Library only</option>${lists.map(([id,l])=>`<option value="${id}" ${f.listId===id?"selected":""}>${esc(l.name)}</option>`).join("")}</select></label>
+      </div>
+      <label class="stack" style="gap:4px"><span class="label">Source link (optional)</span><input id="fSource" placeholder="Paste the page address you copied from" value="${esc(f.source||"")}"></label>
+      <div class="stack" style="gap:6px"><span class="label">Preview</span><div class="sheet-wrap" style="max-height:420px;overflow:auto"><pre class="sheet" id="preview" style="--sheet-size:14px"></pre></div></div>
+      <div class="row"><button class="primary" id="saveNew">Save song</button><button class="ghost" id="clear">Clear</button></div>
+    </div>`}
+  </div>`;
+  wireSongRows();
+  $("#qForm").onsubmit=e=>{e.preventDefault();f.q=$("#q").value;if(f.busy)return;f.title="";f.artist="";f.key="";f.paste="";f.source="";f.loaded=null;
+    if(serverOK()&&f.q.trim())autoSearch();else renderFind(banner);};
+  main.querySelectorAll("[data-res]").forEach(b=>b.onclick=()=>{if(!f.busy){f.title="";f.artist="";loadResult(+b.dataset.res)}});
+  $("#q").oninput=e=>{f.q=e.target.value;const qq=f.q.trim(),en=encodeURIComponent(qq).replace(/%20/g,"+");main.querySelectorAll("#sites a").forEach((a,i)=>{a.classList.toggle("off",!qq);a.href=qq?SITES[i].url(en):"#"})};
+  if(state.readOnly)return;
+  const upd=()=>{const r=importText(f.paste);$("#preview").innerHTML=r.body?renderSheet({body:r.body,key:f.key||r.key},0):'<span class="meta">The formatted song appears here.</span>';return r};
+  $("#paste").oninput=e=>{f.paste=e.target.value;const r=upd();if(r.title&&!f.title){f.title=r.title;$("#fTitle").value=r.title}if(r.artist&&!f.artist){f.artist=r.artist;$("#fArtist").value=r.artist}if(!$("#fKey").dataset.touched){f.key=r.key;$("#fKey").value=r.key}};
+  $("#fTitle").oninput=e=>f.title=e.target.value;$("#fArtist").oninput=e=>f.artist=e.target.value;
+  $("#fKey").oninput=e=>{f.key=e.target.value;e.target.dataset.touched="1"};
+  $("#fList").onchange=e=>f.listId=e.target.value;$("#fSource").oninput=e=>f.source=e.target.value;
+  upd();
+  $("#clear").onclick=()=>{state.find={q:f.q,paste:"",title:"",artist:"",key:"",listId:f.listId,busy:false,results:f.results,status:""};renderFind(banner)};
+  $("#saveNew").onclick=async()=>{
+    const r=importText(f.paste);
+    if(!r.body.trim()){toast("Paste the lyrics and chords first.");$("#paste").focus();return}
+    const id=uid();
+    const song={title:(f.title||r.title||f.q||"Untitled").trim(),artist:(f.artist||r.artist||"").trim(),key:(f.key||r.key||"").trim(),body:r.body,source:(f.source||"").trim(),createdAt:Date.now()};
+    try{
+      await store.save("songs",id,song);
+      if(f.listId){const l=store.lists.get(f.listId);if(l)await store.save("lists",f.listId,{...l,items:[...(l.items||[]),id]})}
+      if(f.listId)state.lastList=f.listId;
+      state.find={q:"",paste:"",title:"",artist:"",key:"",listId:f.listId,busy:false};
+      toast("Saved "+song.title+".");go("#song-"+id);
+    }catch(e){}
+  };
+}
+
+/* ---------------- global wiring ---------------- */
+$("#brand").onclick=()=>go("#");$("#brand").onkeydown=e=>{if(e.key==="Enter")go("#")};
+$("#goFind").onclick=()=>{state.find.listId=state.view.type==="list"?state.view.id:state.find.listId;go("#find")};
+$("#goLibrary").onclick=()=>go("#library");
+$("#newListBtn").onclick=()=>{const f=$("#newListForm");f.hidden=!f.hidden;if(!f.hidden)$("#newListName").focus()};
+$("#newListForm").onsubmit=async e=>{e.preventDefault();const n=$("#newListName").value.trim();if(!n)return;const id=uid();try{await store.save("lists",id,{name:n,items:[],createdAt:Date.now()});$("#newListName").value="";$("#newListForm").hidden=true;go("#list-"+id)}catch(_){}};
+document.querySelectorAll("[data-not]").forEach(b=>b.onclick=()=>{state.notation=b.dataset.not;try{localStorage.setItem("songbook-notation",state.notation)}catch(e){};render()});
+$("#menuToggle").onclick=()=>{const s=$("#side");s.classList.toggle("collapsed");$("#menuToggle").setAttribute("aria-expanded",String(!s.classList.contains("collapsed")))};
+$("#side").classList.add("collapsed");
+
+let rq=false;
+store.listeners.push(()=>{ if(rq)return;rq=true;requestAnimationFrame(()=>{rq=false;
+  // don't clobber inputs on the find page while someone types; only refresh sidebar
+  if(state.view.type==="find"&&document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){renderSide();return}
+  if(state.view.type!=="edit")main.dataset.editing="";
+  render();
+})});
+route();
+initStore();
+})();
+</script>
+
+</body>
+</html>
