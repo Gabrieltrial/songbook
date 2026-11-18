@@ -91,10 +91,20 @@ textarea{font-family:var(--f-mono);font-size:13px;line-height:1.45;resize:vertic
 .sheet .ch{font-family:var(--f-chord);color:var(--chord);font-size:1.25em;line-height:1.25;padding-right:.5em;white-space:nowrap}
 .sheet .ch.nochord{padding-right:0}
 
-.sheet .ch .acc{font-size:.6em;vertical-align:.55em;line-height:0;margin-left:.02em}
+.sheet .ch .acc{font-size:.52em;vertical-align:.75em;line-height:0;margin-left:.01em}
 .sheet .ch .q{font-size:.72em;margin-left:.02em}
-.sheet .ch sup{font-size:.55em;vertical-align:.7em;line-height:0;margin-left:.04em}
-.sheet .ch sup .acc{font-size:1em;vertical-align:0;margin:0}
+.sheet .ch .q.dash{font-size:.9em;margin-left:.06em;margin-right:.02em}
+.sheet .ch sup{font-size:.55em;vertical-align:.72em;line-height:0;margin-left:.05em}
+.sheet .ch sup .acc{font-size:.85em;vertical-align:.12em;margin:0 .01em}
+.sheet .ch .sym{font-size:1.05em}
+.sheet .ch .tri{width:.7em;height:.66em;vertical-align:-.02em;margin:0 .04em 0 .02em;overflow:visible}
+.sheet .ch .s7{position:relative;display:inline-block}
+.sheet .ch .s7::after{content:"";position:absolute;left:.16em;right:-.04em;top:47%;height:.1em;background:currentColor;border-radius:.05em;transform:rotate(-6deg)}
+.sheet .ch .bass{margin-left:.02em}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chips button{font-family:var(--f-chord);font-size:16px;padding:4px 9px;min-width:40px;justify-content:center}
+.chips button.on{background:var(--soft);color:var(--accent);border-color:var(--accent)}
+.chips .tri{width:.7em;height:.66em}
 .sheet .ly{white-space:pre}
 .sheet .chordonly{margin-block:.15em}
 .sheet .chordonly .ch{padding-right:1.2em}
@@ -118,7 +128,11 @@ body.focus .app{grid-template-columns:1fr;grid-template-rows:1fr}
 body.focus main{padding-block:12px}
 body.focus .page{max-width:none!important;gap:0}
 body.focus .sheet-wrap{border:none;background:transparent;padding:4px 0 40vh}
-body.focus .focus-title{display:block}
+body.focus .fabs{opacity:.7}
+body.focus .fabs:hover,body.focus .fabs:focus-within{opacity:1}
+body.focus .focus-title{display:block;font-size:calc(var(--fit,20px)*1.1)}
+body.focus .sheet{font-size:var(--fit,20px)}
+.sheet.measure .ln{flex-wrap:nowrap;width:max-content}
 dialog{border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--ink);padding:20px;width:min(520px,calc(100vw - 32px));max-height:calc(100vh - 40px)}
 dialog::backdrop{background:rgba(0,0,0,.45)}
 .checklist{display:flex;flex-direction:column;gap:4px;max-height:40vh;overflow:auto;border:1px solid var(--line);border-radius:var(--r);padding:8px}
@@ -164,7 +178,7 @@ details summary{list-style-position:inside}
   .sheetbar{position:static;gap:6px}
   .sheetbar .row{gap:6px}
   .transpose .val{min-width:64px;font-size:12px}
-  .scrollctl .lbl{display:none}
+  .scrollctl .lbl,#fsBtn .lbl{display:none}
   .scrollctl button{padding:0 8px}
   h1{font-size:23px}
   .songrow{grid-template-columns:22px minmax(0,1fr) auto}
@@ -200,6 +214,16 @@ details summary{list-style-position:inside}
         <span class="label">Chord names</span>
         <div class="seg" role="group" aria-label="Chord notation">
           <button data-not="auto" class="on">As written</button><button data-not="abc">C D E</button><button data-not="latin">Do Re Mi</button>
+        </div>
+      </div>
+      <div class="stack" style="gap:6px">
+        <span class="label">Chord symbols</span>
+        <div class="chips" role="group" aria-label="Chord symbols">
+          <button data-cs="minus" title="Minor as a dash (C−7) instead of m (Cm7)" aria-label="Minor as a dash">C−</button>
+          <button data-cs="tri" title="Major seventh as a triangle (C△) instead of maj7" aria-label="Major seventh as a triangle">C<svg class="tri" viewBox="0 0 20 19" aria-hidden="true"><path d="M10.2 1.8 L18.6 17 L1.6 16.6 Z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/></svg></button>
+          <button data-cs="half" title="Half-diminished as ø7 instead of m7♭5" aria-label="Half-diminished as ø">Cø</button>
+          <button data-cs="dimc" title="Diminished as ° instead of dim" aria-label="Diminished as a circle">C°</button>
+          <button data-cs="cross7" title="Seven with a crossbar" aria-label="Seven with a crossbar">7̶</button>
         </div>
       </div>
       <div class="status" id="status"><span class="dot"></span><span>Connecting…</span></div>
@@ -326,6 +350,7 @@ const state={
   view:{type:"home"}, transpose:{}, readOnly:false,
   notation:(()=>{try{return localStorage.getItem("songbook-notation")||"auto"}catch(e){return "auto"}})(),
   big:(()=>{try{return localStorage.getItem("songbook-big")==="1"}catch(e){return false}})(),
+  csym:(()=>{const d={minus:true,tri:true,half:true,dimc:true,cross7:true};try{return Object.assign(d,JSON.parse(localStorage.getItem("songbook-csym")||"{}"))}catch(e){return d}})(),
   find:{q:"",paste:"",title:"",artist:"",key:"",listId:"",busy:false},
   lastList:null
 };
@@ -370,6 +395,7 @@ function renderSide(){
   $("#libCount").textContent=store.songs.size;
   $("#goLibrary").classList.toggle("active",state.view.type==="library");
   document.querySelectorAll("[data-not]").forEach(b=>b.classList.toggle("on",b.dataset.not===state.notation));
+  document.querySelectorAll("[data-cs]").forEach(b=>{const on=!!state.csym[b.dataset.cs];b.classList.toggle("on",on);b.setAttribute("aria-pressed",String(on))});
   $("#newListBtn").hidden=state.readOnly;
 }
 
@@ -471,18 +497,40 @@ function renderLibrary(banner){
   if($("#blank"))$("#blank").onclick=newBlankSong;
 }
 
-/* Real Book style chord names: ♭/♯ symbols, extensions raised */
-function sym(x){return x.replace(/#/g,"♯").replace(/b(?=\d|$|\/|\))/g,"♭")}
-function accHTML(a){return a?'<span class="acc">'+sym(a)+'</span>':""}
-function extHTML(x){return esc(x).replace(/#/g,'<span class="acc">♯</span>').replace(/b(?=\d|$|\)|\/)/g,'<span class="acc">♭</span>')}
+/* Real Book style chord symbols, all set in MuseJazz Text (the triangle is drawn to match its stroke) */
+const TRI='<svg class="tri" viewBox="0 0 20 19" aria-hidden="true"><path d="M10.2 1.8 L18.6 17 L1.6 16.6 Z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+function accHTML(a){return a?'<span class="acc">'+(a==="#"?"♯":"♭")+'</span>':""}
+function supHTML(x){
+  const CS=state.csym;let out="";
+  for(let i=0;i<x.length;i++){
+    const c=x[i],nx=x[i+1]||"";
+    if(c==="△")out+=TRI;
+    else if(c==="ø"||c==="°")out+='<span class="sym">'+c+'</span>';
+    else if((c==="#"||c==="b")&&/[\d(]/.test(nx))out+='<span class="acc">'+(c==="#"?"♯":"♭")+'</span>';
+    else if(c==="7"&&CS.cross7&&!/\d/.test(x[i-1]||"")&&!/\d/.test(nx))out+='<span class="s7">7</span>';
+    else out+=esc(c);
+  }
+  return '<sup>'+out+'</sup>';
+}
 function chordHTML(t){
-  const m=t.match(/^([(\[]*)(.*?)([)\]\.,]*)$/)||["",'',t,''];
+  const CS=state.csym;
+  const m=(t.match(/^([(\[]*)(.*?)([)\]\.,]*)$/)||["",'',t,'']).slice();
+  while(m[3][0]===")"&&(m[2].split("(").length>m[2].split(")").length)){m[2]+=")";m[3]=m[3].slice(1)}
   const r=m[2].match(/^(Do|Re|Mi|Fa|Sol|La|Si|DO|RE|MI|FA|SOL|LA|SI|[A-G])([#b]?)([^\/]*)(?:\/(.+))?$/);
   if(!r)return esc(t);
-  const q=(r[3].match(/^(m(?!aj)|min|-)/)||[""])[0],ext=r[3].slice(q.length);
+  let suf=r[3],q="",pre="",mm;
+  if((mm=suf.match(/^(m(?!aj)|min|-)/))){
+    suf=suf.slice(mm[0].length);
+    const hd=suf.match(/^7?\(?b5\)?/);
+    if(CS.half&&hd&&/b5/.test(hd[0])){pre="ø7";suf=suf.slice(hd[0].length)}
+    else q=CS.minus?'<span class="q dash">-</span>':'<span class="q">m</span>';
+  } else if((mm=suf.match(/^(dim|°|o(?=\d|$))/))){suf=suf.slice(mm[0].length);pre=CS.dimc?"°":"dim"}
+  else if(suf[0]==="ø"){suf=suf.slice(1);pre="ø"}
+  if(CS.tri)suf=suf.replace(/^\(?(maj|Maj|MA|Ma|ma|M|Δ|△)7\)?/,x=>x[0]==="("?"(△)":"△").replace(/^(maj|Maj|MA|Ma|ma|M|Δ)(?=\d)/,"△");
+  const ext=pre+suf;
   let bass="";
-  if(r[4]){const bm=r[4].match(/^(Do|Re|Mi|Fa|Sol|La|Si|DO|RE|MI|FA|SOL|LA|SI|[A-G])([#b]?)(.*)$/);bass="/"+(bm?esc(bm[1])+accHTML(bm[2])+esc(bm[3]):esc(r[4]))}
-  return esc(m[1])+esc(r[1])+accHTML(r[2])+(q?'<span class="q">'+esc(q)+'</span>':"")+(ext?"<sup>"+extHTML(ext)+"</sup>":"")+bass+esc(m[3]);
+  if(r[4]){const bm=r[4].match(/^(Do|Re|Mi|Fa|Sol|La|Si|DO|RE|MI|FA|SOL|LA|SI|[A-G])([#b]?)(.*)$/);bass='<span class="bass">/'+(bm?esc(bm[1])+accHTML(bm[2])+esc(bm[3]):esc(r[4]))+'</span>'}
+  return esc(m[1])+esc(r[1])+accHTML(r[2])+q+(ext?supHTML(ext):"")+bass+esc(m[3]);
 }
 function chordToks(line,o){
   const plain=o.semi===0&&o.notation==="auto";
@@ -570,10 +618,21 @@ function changeDuration(id,delta){
 /* ---------------- full screen (real full screen where the browser allows it, plus a reading mode) ---------------- */
 const ICON_FS='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
 const ICON_FS_EXIT='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+function fitFocus(){
+  const sh=main.querySelector(".sheet");if(!sh)return;const wrap=sh.parentElement;
+  if(!document.body.classList.contains("focus")){wrap.style.removeProperty("--fit");return}
+  wrap.style.setProperty("--fit","20px");sh.classList.add("measure");
+  let w=1;sh.querySelectorAll(".ln").forEach(l=>{w=Math.max(w,l.offsetWidth)});
+  sh.classList.remove("measure");
+  const k=Math.min(4,Math.max(0.8,(sh.clientWidth-6)/w));
+  wrap.style.setProperty("--fit",(20*k).toFixed(1)+"px");
+}
+window.addEventListener("resize",()=>{clearTimeout(window.__fitT);window.__fitT=setTimeout(fitFocus,120)});
 function fsElement(){return document.fullscreenElement||document.webkitFullscreenElement}
 function setFocus(on){
   document.body.classList.toggle("focus",on);
   const f=document.getElementById("fsFab");if(f)f.hidden=!on;
+  requestAnimationFrame(fitFocus);setTimeout(fitFocus,400);
   const el=document.documentElement;
   try{
     if(on&&!fsElement()){const req=el.requestFullscreen||el.webkitRequestFullscreen;if(req){const r=req.call(el);if(r&&r.catch)r.catch(()=>{})}}
@@ -642,7 +701,7 @@ function renderSong(banner,id){
           <button class="step" id="scFaster" aria-label="Faster: song lasts 5 seconds less" title="Faster">+</button>
         </div>
         <div class="seg" role="group" aria-label="Text size"><button id="szN" class="${state.big?"":"on"}" aria-pressed="${!state.big}" aria-label="Normal text" title="Normal text">A</button><button id="szL" class="${state.big?"on":""}" aria-pressed="${state.big}" aria-label="Large text" title="Large text" style="font-size:19px;font-weight:600">A</button></div>
-        <button class="iconbtn" id="fsBtn" aria-label="Full screen" title="Full screen">${ICON_FS}</button>
+        <button id="fsBtn" title="Full screen: only the song, filling the screen">${ICON_FS}<span class="lbl"> Full screen</span></button>
         ${state.readOnly?"":`<button id="edit">Edit</button>`}
       </div>
     </div>
@@ -669,6 +728,8 @@ function renderSong(banner,id){
   $("#szN").onclick=()=>setBig(false);$("#szL").onclick=()=>setBig(true);
   $("#scPlay").onclick=$("#scFab").onclick=()=>{sc.playing?scStop():scStart()};
   $("#fsBtn").onclick=()=>setFocus(true);$("#fsFab").onclick=()=>setFocus(false);
+  if(document.body.classList.contains("focus"))requestAnimationFrame(fitFocus);
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitFocus);
   $("#scSlower").onclick=()=>changeDuration(id,5);$("#scFaster").onclick=()=>changeDuration(id,-5);
   scUpdateUI();
   if($("#edit"))$("#edit").onclick=()=>go("#edit-"+id);
@@ -882,6 +943,7 @@ $("#goFind").onclick=()=>{state.find.listId=state.view.type==="list"?state.view.
 $("#goLibrary").onclick=()=>go("#library");
 $("#newListBtn").onclick=()=>{const f=$("#newListForm");f.hidden=!f.hidden;if(!f.hidden)$("#newListName").focus()};
 $("#newListForm").onsubmit=async e=>{e.preventDefault();const n=$("#newListName").value.trim();if(!n)return;const id=uid();try{await store.save("lists",id,{name:n,items:[],createdAt:Date.now()});$("#newListName").value="";$("#newListForm").hidden=true;go("#list-"+id)}catch(_){}};
+document.querySelectorAll("[data-cs]").forEach(b=>b.onclick=()=>{const k=b.dataset.cs;state.csym[k]=!state.csym[k];try{localStorage.setItem("songbook-csym",JSON.stringify(state.csym))}catch(e){};render()});
 document.querySelectorAll("[data-not]").forEach(b=>b.onclick=()=>{state.notation=b.dataset.not;try{localStorage.setItem("songbook-notation",state.notation)}catch(e){};render()});
 $("#menuToggle").onclick=()=>{const s=$("#side");s.classList.toggle("collapsed");$("#menuToggle").setAttribute("aria-expanded",String(!s.classList.contains("collapsed")))};
 $("#side").classList.add("collapsed");

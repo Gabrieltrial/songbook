@@ -20,7 +20,9 @@ function parseChord(tok){
 }
 function splitTok(t){const m=t.match(/^([(\[]*)(.*?)([)\]\.,]*)$/);return m?[m[1],m[2],m[3]]:["",t,""]}
 function isChordTok(t){const [,c]=splitTok(t);return c!==""&&!!parseChord(c)}
+function isLabel(line){return /^\s*\[[^\]]{1,40}\]\s*$/.test(line)}
 function isChordLine(line){
+  if(isLabel(line))return false;
   const toks=line.trim().split(/\s+/).filter(Boolean);
   if(!toks.length)return false;
   let ch=0,other=0;
@@ -29,7 +31,7 @@ function isChordLine(line){
 }
 function isSection(line){
   const t=line.trim();
-  return /^\[[^\]]{1,40}\]$/.test(t)&&!isChordTok(t) ||
+  return isLabel(t) ||
     /^(intro|verse|verso|estrofa|chorus|coro|estribillo|bridge|puente|pre-?chorus|pre-?coro|outro|final|solo|interlude|interludio|instrumental|riff|tag|refrain|refrão|ponte)\b[^a-z]{0,12}:?$/i.test(t) ||
     /^(intro|verse|verso|estrofa|chorus|coro|estribillo|bridge|puente|outro|solo)\s*\d*\s*:/i.test(t)&&t.length<24;
 }
@@ -100,7 +102,7 @@ function importText(raw){
     }
     // inline ChordPro: [G]words
     const inl=[...line.matchAll(/\[([^\]\s]{1,14})\]/g)];
-    if(inl.length&&inl.every(m=>parseChord(m[1]))){
+    if(inl.length&&!isLabel(line)&&inl.every(m=>parseChord(m[1]))){
       let ch="",ly="",i=0;
       const re=/\[([^\]\s]{1,14})\]/g;let m;
       while((m=re.exec(line))){
