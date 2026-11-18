@@ -7,7 +7,9 @@ Cançoner web per gestionar llistes de cançons amb la lletra i els acords a sob
 - **Notació**: mostra els acords tal com estan escrits, en C D E o en Do Re Mi.
 - **Desplaçament automàtic**: el botó ▶ Scroll (o la barra espaiadora) fa baixar el text al ritme de la cançó. Comença quan arribes a la part baixa de la pantalla i acaba just al final de la cançó. La velocitat surt de la durada de la gravació original, que es busca automàticament. Amb − i + la pots ajustar de 5 en 5 segons. Si fas scroll a mà, continua des d'on l'hagis deixat. Mentre es desplaça, la pantalla no s'apaga.
 - **Enllaç a la gravació original**: cada cançó té un botó que porta a la versió original a YouTube (o Apple Music). Es pot canviar a l'editor.
-- **Aspecte de Real Book**: acords i lletra amb tipografia manuscrita, extensions dels acords elevades (C♯m⁷♭⁵) i seccions en requadre. Dues mides de lletra: Normal i Large.
+- **Aspecte de Real Book**: acords amb la tipografia MuseJazz Text, amb les alteracions, la "m" de menor i les extensions més petites (C♯m⁷♭⁵), i seccions en requadre. Dues mides de lletra.
+- **Pantalla completa**: la icona ⛶ amaga menús i controls i deixa només la cançó, amb els botons de desplaçament i de sortir. Als iPhone, on el navegador no permet la pantalla completa real, fa el mateix dins la pàgina. Si l'afegeixes a la pantalla d'inici des de Safari, també desapareix la barra del navegador.
+- **Exportar / importar**: tries les llistes i les exportes en **PDF** (una cançó per pàgina, amb portada i índex de cada llista) o en una **còpia de seguretat** (`.json`) que després pots tornar a carregar a la mateixa pàgina. El PDF es genera amb la finestra d'impressió: tria "Desar com a PDF" i la carpeta on el vols. A l'iPhone i l'iPad, a la finestra d'impressió toca Compartir → Desa a Fitxers.
 - **Compartit i editable**: tothom que obre la pàgina veu les mateixes llistes i cançons, i els canvis arriben en directe a totes les pantalles.
 - També accepta text enganxat a mà: acords sobre la lletra, ChordPro (`[G]paraula`) o còpies d'Ultimate Guitar.
 
@@ -68,6 +70,7 @@ docker run -p 3000:3000 -v songbook-data:/data -e EDIT_KEY=la-meva-clau songbook
 server.js          servidor: dades compartides, cerca i lectura de pàgines d'acords
 public/index.html  la pàgina web
 public/chords.js   detecció d'acords, transport de to i importació (la fan servir la pàgina i el servidor)
+public/fonts/      tipografia MuseJazz Text (© Torsten Hämmerle, Abraham Lee; llicència SIL OFL, vegeu OFL.txt)
 ```
 
 ## Notes

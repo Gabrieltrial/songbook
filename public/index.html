@@ -7,8 +7,9 @@
 <meta name="theme-color" content="#0f6b5c">
 <title>Shared Songbook</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700&family=Permanent+Marker&family=Patrick+Hand&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700&family=Patrick+Hand&display=swap">
 <style>
+@font-face{font-family:"MuseJazz Text";src:url("fonts/MuseJazzText.otf") format("opentype");font-display:swap}
 html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0}
 [hidden]{display:none!important}
@@ -19,7 +20,7 @@ body{margin:0}
   --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --f-body:"Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --f-mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  --f-chord:"Permanent Marker", "Marker Felt", "Comic Sans MS", cursive;
+  --f-chord:"MuseJazz Text", "Marker Felt", "Comic Sans MS", cursive;
   --f-lyric:"Patrick Hand", "Chalkboard SE", "Comic Sans MS", cursive;
   --r:8px;
 }
@@ -87,16 +88,18 @@ textarea{font-family:var(--f-mono);font-size:13px;line-height:1.45;resize:vertic
 .big .sheet{font-size:27px}
 .sheet .ln{display:flex;flex-wrap:wrap;align-items:flex-end;min-height:1.25em}
 .sheet .sg{display:inline-flex;flex-direction:column}
-.sheet .ch{font-family:var(--f-chord);color:var(--chord);font-size:1.2em;line-height:1.2;padding-right:.5em;white-space:nowrap;letter-spacing:.02em}
+.sheet .ch{font-family:var(--f-chord);color:var(--chord);font-size:1.25em;line-height:1.25;padding-right:.5em;white-space:nowrap}
 .sheet .ch.nochord{padding-right:0}
-.sheet .ch .q,.sheet .ch sup{font-family:var(--f-lyric);font-weight:700}
-.sheet .ch .q{font-size:1.05em;margin-left:.02em}
-.sheet .ch sup{font-size:.62em;vertical-align:.5em;line-height:0;margin-left:.03em}
+
+.sheet .ch .acc{font-size:.6em;vertical-align:.55em;line-height:0;margin-left:.02em}
+.sheet .ch .q{font-size:.72em;margin-left:.02em}
+.sheet .ch sup{font-size:.55em;vertical-align:.7em;line-height:0;margin-left:.04em}
+.sheet .ch sup .acc{font-size:1em;vertical-align:0;margin:0}
 .sheet .ly{white-space:pre}
 .sheet .chordonly{margin-block:.15em}
 .sheet .chordonly .ch{padding-right:1.2em}
 .sheet .plain{white-space:pre-wrap}
-.sheet .sec{font-family:var(--f-chord);color:var(--section);border:2px solid currentColor;border-radius:4px;padding:.05em .4em;display:inline-block;margin-top:.7em;margin-bottom:.15em;font-size:.95em;letter-spacing:.03em}
+.sheet .sec{font-family:var(--f-chord);font-weight:400;color:var(--section);border:2px solid currentColor;border-radius:4px;padding:.05em .4em;display:inline-block;margin-top:.7em;margin-bottom:.15em;font-size:.95em;letter-spacing:.03em}
 .sheet .gap{height:.6em}
 .scrollctl{display:flex;align-items:center;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px}
 .scrollctl button{border:none;border-radius:999px;height:30px;padding:0 10px}
@@ -105,6 +108,39 @@ textarea{font-family:var(--f-mono);font-size:13px;line-height:1.45;resize:vertic
 .scrollctl #scPlay.on{background:var(--accent);color:var(--accent-ink)}
 .fab{position:fixed;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:20;width:56px;height:56px;border-radius:50%;justify-content:center;font-size:20px;background:var(--accent);color:var(--accent-ink);border:none;box-shadow:0 4px 14px rgba(0,0,0,.25)}
 .fab.off{background:var(--panel);color:var(--accent);border:1px solid var(--line)}
+.fabs{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:20;display:flex;flex-direction:column;gap:10px;align-items:center}
+.fabs .fab{position:static}
+.fab.mini{width:44px;height:44px;font-size:16px;background:var(--panel);color:var(--ink);border:1px solid var(--line)}
+.iconbtn{width:36px;height:34px;padding:0;justify-content:center}
+.focus-title{display:none;font-family:var(--f-chord);font-size:1.3em;margin-bottom:.4em;color:var(--ink)}
+body.focus aside,body.focus .song-head,body.focus .sheetbar,body.focus .song-foot,body.focus .banner{display:none!important}
+body.focus .app{grid-template-columns:1fr;grid-template-rows:1fr}
+body.focus main{padding-block:12px}
+body.focus .page{max-width:none!important;gap:0}
+body.focus .sheet-wrap{border:none;background:transparent;padding:4px 0 40vh}
+body.focus .focus-title{display:block}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--ink);padding:20px;width:min(520px,calc(100vw - 32px));max-height:calc(100vh - 40px)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.checklist{display:flex;flex-direction:column;gap:4px;max-height:40vh;overflow:auto;border:1px solid var(--line);border-radius:var(--r);padding:8px}
+.checklist label,.radios label{display:flex;gap:8px;align-items:center;cursor:pointer;padding:4px 2px}
+.checklist input,.radios input{width:auto}
+#printArea{display:none}
+@media print{
+  @page{margin:14mm 14mm 16mm}
+  html,body{background:#fff!important;color:#000!important;padding:0!important}
+  body>*:not(#printArea){display:none!important}
+  #printArea{display:block;color:#000}
+  #printArea .p-cover{text-align:center;padding-top:30mm}
+  #printArea .p-cover h1{font-family:var(--f-chord);font-weight:400;font-size:34pt;margin-bottom:8mm}
+  #printArea .p-cover ol{text-align:left;display:inline-block;font-family:var(--f-lyric);font-size:14pt;line-height:1.6}
+  #printArea .p-song{break-before:page}
+  #printArea .p-head{display:flex;justify-content:space-between;align-items:baseline;gap:8mm;border-bottom:1.5pt solid #000;padding-bottom:2mm;margin-bottom:5mm}
+  #printArea .p-head h2{font-family:var(--f-chord);font-weight:400;font-size:24pt;margin:0}
+  #printArea .p-head span{font-family:var(--f-lyric);font-size:12pt}
+  #printArea .sheet{font-size:14pt;color:#000}
+  #printArea .sheet .ch,#printArea .sheet .sec{color:#000}
+  #printArea .sheet .ln,#printArea .sheet .sec{break-inside:avoid}
+}
 .meta{color:var(--muted)}
 .empty{color:var(--muted);padding:24px;text-align:center;border:1px dashed var(--line);border-radius:12px}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
@@ -125,7 +161,12 @@ details summary{list-style-position:inside}
   main{padding-left:max(16px,env(safe-area-inset-left,0px))}
   .sheet-wrap{padding:14px}
   .sheet{font-size:17px} .big .sheet{font-size:22px}
-  .sheetbar{position:static}
+  .sheetbar{position:static;gap:6px}
+  .sheetbar .row{gap:6px}
+  .transpose .val{min-width:64px;font-size:12px}
+  .scrollctl .lbl{display:none}
+  .scrollctl button{padding:0 8px}
+  h1{font-size:23px}
   .songrow{grid-template-columns:22px minmax(0,1fr) auto}
   .songrow .tools{grid-column:2 / -1}
 }
@@ -153,6 +194,7 @@ details summary{list-style-position:inside}
       <div class="stack" style="gap:4px">
         <span class="label">Library</span>
         <button class="navitem" id="goLibrary"><span>All songs</span><span class="count" id="libCount">0</span></button>
+        <button class="navitem" id="openExport"><span>Export / import</span><span class="count">PDF · backup</span></button>
       </div>
       <div class="stack" style="gap:6px">
         <span class="label">Chord names</span>
@@ -166,6 +208,29 @@ details summary{list-style-position:inside}
   <main id="main"></main>
 </div>
 <div class="toast" id="toast" hidden></div>
+<dialog id="exportDlg" aria-labelledby="exTitle">
+  <form method="dialog" class="stack" style="gap:14px" id="exForm">
+    <div class="row" style="justify-content:space-between"><h2 id="exTitle">Export</h2><button value="cancel" class="ghost" aria-label="Close">✕</button></div>
+    <div class="stack" style="gap:6px">
+      <div class="row" style="justify-content:space-between"><span class="label">Lists to export</span><span class="row" style="gap:4px"><button type="button" class="ghost" id="exAll" style="padding:2px 6px;font-size:13px">All</button><button type="button" class="ghost" id="exNone" style="padding:2px 6px;font-size:13px">None</button></span></div>
+      <div class="checklist" id="exLists"></div>
+    </div>
+    <div class="stack radios" style="gap:2px">
+      <span class="label">Format</span>
+      <label><input type="radio" name="exFmt" value="pdf" checked> <span><b>PDF</b> · one song per page, ready to print</span></label>
+      <label><input type="radio" name="exFmt" value="backup"> <span><b>Backup file</b> · can be loaded back into the songbook</span></label>
+    </div>
+    <p class="hint" id="exHint" style="margin:0"></p>
+    <div class="row" style="justify-content:flex-end"><button value="cancel">Cancel</button><button type="button" class="primary" id="exGo">Export</button></div>
+    <hr style="border:none;border-top:1px solid var(--line);width:100%;margin:2px 0">
+    <div class="stack" style="gap:6px">
+      <span class="label">Import a backup</span>
+      <p class="hint" style="margin:0">Adds the lists and songs from a backup file. Songs that already exist are replaced only if the backup has a newer version.</p>
+      <div class="row"><input type="file" id="imFile" accept=".json,application/json" style="max-width:100%"></div>
+    </div>
+  </form>
+</dialog>
+<div id="printArea" aria-hidden="true"></div>
 
 <script src="chords.js"></script>
 <script>
@@ -280,6 +345,7 @@ function route(){
   else state.view={type:"home"};
   if(state.view.type==="list")state.lastList=state.view.id;
   if(!(state.view.type==="song"&&state.view.id===sc.id))scStop();
+  if(state.view.type!=="song"&&document.body.classList.contains("focus"))setFocus(false);
   if(state.view.type!=="edit"){main.dataset.editing="";editDraft=null}
   $("#side").classList.add("collapsed");$("#menuToggle").setAttribute("aria-expanded","false");
   render();window.scrollTo(0,0);
@@ -407,12 +473,16 @@ function renderLibrary(banner){
 
 /* Real Book style chord names: ♭/♯ symbols, extensions raised */
 function sym(x){return x.replace(/#/g,"♯").replace(/b(?=\d|$|\/|\))/g,"♭")}
+function accHTML(a){return a?'<span class="acc">'+sym(a)+'</span>':""}
+function extHTML(x){return esc(x).replace(/#/g,'<span class="acc">♯</span>').replace(/b(?=\d|$|\)|\/)/g,'<span class="acc">♭</span>')}
 function chordHTML(t){
   const m=t.match(/^([(\[]*)(.*?)([)\]\.,]*)$/)||["",'',t,''];
   const r=m[2].match(/^(Do|Re|Mi|Fa|Sol|La|Si|DO|RE|MI|FA|SOL|LA|SI|[A-G])([#b]?)([^\/]*)(?:\/(.+))?$/);
   if(!r)return esc(t);
   const q=(r[3].match(/^(m(?!aj)|min|-)/)||[""])[0],ext=r[3].slice(q.length);
-  return esc(m[1])+esc(r[1]+sym(r[2]))+(q?'<span class="q">'+esc(q)+'</span>':"")+(ext?"<sup>"+esc(sym(ext))+"</sup>":"")+(r[4]?"/"+esc(r[4].replace(/^([A-G]|Do|Re|Mi|Fa|Sol|La|Si)([#b]?)/,(x,n,a)=>n+sym(a))):"")+esc(m[3]);
+  let bass="";
+  if(r[4]){const bm=r[4].match(/^(Do|Re|Mi|Fa|Sol|La|Si|DO|RE|MI|FA|SOL|LA|SI|[A-G])([#b]?)(.*)$/);bass="/"+(bm?esc(bm[1])+accHTML(bm[2])+esc(bm[3]):esc(r[4]))}
+  return esc(m[1])+esc(r[1])+accHTML(r[2])+(q?'<span class="q">'+esc(q)+'</span>':"")+(ext?"<sup>"+extHTML(ext)+"</sup>":"")+bass+esc(m[3]);
 }
 function chordToks(line,o){
   const plain=o.semi===0&&o.notation==="auto";
@@ -497,6 +567,22 @@ function changeDuration(id,delta){
   durSaveT=setTimeout(()=>{const cur=store.songs.get(id);if(cur&&!state.readOnly)store.save("songs",id,{...cur,duration:nd},{quiet:true}).catch(()=>{})},1200);
 }
 
+/* ---------------- full screen (real full screen where the browser allows it, plus a reading mode) ---------------- */
+const ICON_FS='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
+const ICON_FS_EXIT='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+function fsElement(){return document.fullscreenElement||document.webkitFullscreenElement}
+function setFocus(on){
+  document.body.classList.toggle("focus",on);
+  const f=document.getElementById("fsFab");if(f)f.hidden=!on;
+  const el=document.documentElement;
+  try{
+    if(on&&!fsElement()){const req=el.requestFullscreen||el.webkitRequestFullscreen;if(req){const r=req.call(el);if(r&&r.catch)r.catch(()=>{})}}
+    if(!on&&fsElement()){const ex=document.exitFullscreen||document.webkitExitFullscreen;if(ex){const r=ex.call(document);if(r&&r.catch)r.catch(()=>{})}}
+  }catch(e){}
+}
+["fullscreenchange","webkitfullscreenchange"].forEach(ev=>document.addEventListener(ev,()=>{if(!fsElement()&&document.body.classList.contains("focus"))setFocus(false)}));
+window.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.body.classList.contains("focus")&&!fsElement())setFocus(false)});
+
 /* ---------------- duration and original recording, looked up by the server ---------------- */
 const looked=new Set();
 async function lookupInfo(id){
@@ -532,7 +618,7 @@ function renderSong(banner,id){
   lookupInfo(id);
   const rec=recordingLink(s);
   main.innerHTML=`<div class="page" style="max-width:1000px">${banner}
-    <div class="stack" style="gap:4px">
+    <div class="stack song-head" style="gap:4px">
       ${pos>=0?`<a class="hint" href="#list-${state.lastList}" style="color:var(--accent)">← ${esc(list.name)} · song ${pos+1} of ${items.length}</a>`:""}
       <h1>${esc(s.title||"Untitled")}</h1>
       <div class="meta">${[s.artist?esc(s.artist):"",orig?`Original key <span class="keychip">${esc(orig)}</span>`:"",inLists.length?`In ${inLists.map(([lid,l])=>`<a href="#list-${lid}" style="color:var(--accent)">${esc(l.name)}</a>`).join(", ")}`:""].filter(Boolean).join(" · ")}</div>
@@ -542,7 +628,7 @@ function renderSong(banner,id){
       <div class="row">
         <div class="transpose" role="group" aria-label="Transpose">
           <button id="tDown" aria-label="Down one semitone" title="Down one semitone">−</button>
-          <span class="val" aria-live="polite">${semi>0?"+":""}${semi} st${now?" · "+esc(now):""}</span>
+          <span class="val" aria-live="polite">${semi>0?"+":""}${semi}${now?" · "+esc(now):""}</span>
           <button id="tUp" aria-label="Up one semitone" title="Up one semitone">+</button>
         </div>
         ${semi?`<button id="tReset" class="ghost">Reset</button>`:""}
@@ -550,22 +636,26 @@ function renderSong(banner,id){
       </div>
       <div class="row">
         <div class="scrollctl" role="group" aria-label="Auto-scroll">
-          <button id="scPlay" aria-pressed="false" title="Scroll through the song at its tempo (space bar)">▶ Scroll</button>
+          <button id="scPlay" aria-pressed="false" title="Scroll through the song at its tempo (space bar)">▶<span class="lbl"> Scroll</span></button>
           <button class="step" id="scSlower" aria-label="Slower: song lasts 5 seconds longer" title="Slower">−</button>
           <span class="dur" id="scDur" title="Song length used for scrolling">${fmtDur(s.duration||210)}</span>
           <button class="step" id="scFaster" aria-label="Faster: song lasts 5 seconds less" title="Faster">+</button>
         </div>
-        <div class="seg" role="group" aria-label="Text size"><button id="szN" class="${state.big?"":"on"}" aria-pressed="${!state.big}">Normal</button><button id="szL" class="${state.big?"on":""}" aria-pressed="${state.big}">Large</button></div>
+        <div class="seg" role="group" aria-label="Text size"><button id="szN" class="${state.big?"":"on"}" aria-pressed="${!state.big}" aria-label="Normal text" title="Normal text">A</button><button id="szL" class="${state.big?"on":""}" aria-pressed="${state.big}" aria-label="Large text" title="Large text" style="font-size:19px;font-weight:600">A</button></div>
+        <button class="iconbtn" id="fsBtn" aria-label="Full screen" title="Full screen">${ICON_FS}</button>
         ${state.readOnly?"":`<button id="edit">Edit</button>`}
       </div>
     </div>
-    <div class="sheet-wrap ${state.big?"big":""}"><div class="sheet">${renderSheet(s,semi)}</div></div>
-    <button class="fab off" id="scFab" aria-label="Start or pause auto-scroll" title="Auto-scroll (space bar)">▶</button>
-    <div class="row" style="justify-content:space-between">
+    <div class="sheet-wrap ${state.big?"big":""}"><div class="focus-title">${esc(s.title||"")}${now?" · "+esc(now):""}</div><div class="sheet">${renderSheet(s,semi)}</div></div>
+    <div class="fabs">
+      <button class="fab mini" id="fsFab" aria-label="Exit full screen" title="Exit full screen" ${document.body.classList.contains("focus")?"":"hidden"}>${ICON_FS_EXIT}</button>
+      <button class="fab off" id="scFab" aria-label="Start or pause auto-scroll" title="Auto-scroll (space bar)">▶</button>
+    </div>
+    <div class="row song-foot" style="justify-content:space-between">
       <div class="row">${prev?`<button data-nav="${prev}">← ${esc((store.songs.get(prev)||{}).title||"Previous")}</button>`:""}${next?`<button data-nav="${next}">${esc((store.songs.get(next)||{}).title||"Next")} →</button>`:""}</div>
       ${!state.readOnly&&notIn.length?`<select id="addToList" style="max-width:260px" aria-label="Add this song to a list"><option value="">Add to a list…</option>${notIn.map(([lid,l])=>`<option value="${lid}">${esc(l.name)}</option>`).join("")}</select>`:""}
     </div>
-    ${s.source?`<p class="hint" style="margin:0">Source: ${/^https?:\/\//.test(s.source)?`<a href="${esc(s.source)}" target="_blank" rel="noopener" style="color:var(--accent)">${esc(s.source)}</a>`:esc(s.source)}</p>`:""}
+    ${s.source?`<p class="hint song-foot" style="margin:0">Source: ${/^https?:\/\//.test(s.source)?`<a href="${esc(s.source)}" target="_blank" rel="noopener" style="color:var(--accent)">${esc(s.source)}</a>`:esc(s.source)}</p>`:""}
   </div>`;
   const setSemi=v=>{v=((v+11)%12+12)%12-11;if(v>6)v-=12;if(v<-6)v+=12;state.transpose[id]=v;renderSong(banner,id)};
   $("#tUp").onclick=()=>setSemi(semi+1);$("#tDown").onclick=()=>setSemi(semi-1);
@@ -578,6 +668,7 @@ function renderSong(banner,id){
   const setBig=v=>{state.big=v;try{localStorage.setItem("songbook-big",v?"1":"0")}catch(e){};main.querySelector(".sheet-wrap").classList.toggle("big",v);$("#szN").classList.toggle("on",!v);$("#szL").classList.toggle("on",v);$("#szN").setAttribute("aria-pressed",String(!v));$("#szL").setAttribute("aria-pressed",String(v))};
   $("#szN").onclick=()=>setBig(false);$("#szL").onclick=()=>setBig(true);
   $("#scPlay").onclick=$("#scFab").onclick=()=>{sc.playing?scStop():scStart()};
+  $("#fsBtn").onclick=()=>setFocus(true);$("#fsFab").onclick=()=>setFocus(false);
   $("#scSlower").onclick=()=>changeDuration(id,5);$("#scFaster").onclick=()=>changeDuration(id,-5);
   scUpdateUI();
   if($("#edit"))$("#edit").onclick=()=>go("#edit-"+id);
@@ -706,6 +797,84 @@ function renderFind(banner){
     }catch(e){}
   };
 }
+
+/* ---------------- export: PDF (through the print dialog) and backup file ---------------- */
+function exSelected(){return [...document.querySelectorAll("#exLists input:checked")].map(i=>i.value)}
+function exHint(){
+  const fmt=(document.querySelector('input[name="exFmt"]:checked')||{}).value;
+  const n=new Set(exSelected().flatMap(id=>((store.lists.get(id)||{}).items||[]))).size;
+  document.getElementById("exHint").textContent=fmt==="pdf"
+    ?n+" song"+(n===1?"":"s")+". The print window opens: choose “Save as PDF” as the printer, then pick where to save the file. On iPhone and iPad, tap Share in the print window, then Save to Files."
+    :n+" song"+(n===1?"":"s")+". You choose where to save the file. Load it later with Import a backup.";
+}
+function openExport(){
+  const lists=[...store.lists.entries()].sort((a,b)=>(a[1].name||"").localeCompare(b[1].name||""));
+  document.getElementById("exLists").innerHTML=lists.length?lists.map(([id,l])=>`<label><input type="checkbox" value="${id}" checked> ${esc(l.name||"Untitled list")} <span class="hint">(${(l.items||[]).length})</span></label>`).join(""):'<span class="hint">There are no lists yet.</span>';
+  exHint();
+  const d=document.getElementById("exportDlg");
+  if(d.showModal)d.showModal();else d.setAttribute("open","");
+}
+async function saveFile(name,blob,desc,mime,ext){
+  if(window.showSaveFilePicker){
+    try{const h=await showSaveFilePicker({suggestedName:name,types:[{description:desc,accept:{[mime]:[ext]}}]});const w=await h.createWritable();await w.write(blob);await w.close();return true}
+    catch(e){if(e&&e.name==="AbortError")return false}
+  }
+  const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);return true;
+}
+function stamp(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+async function exportBackup(ids){
+  const lists={},songs={};
+  for(const id of ids){const l=store.lists.get(id);if(!l)continue;lists[id]=l;for(const sid of l.items||[]){const s=store.songs.get(sid);if(s)songs[sid]=s}}
+  const data={format:"songbook-backup",version:1,exportedAt:new Date().toISOString(),lists,songs};
+  const ok=await saveFile("songbook-backup-"+stamp()+".json",new Blob([JSON.stringify(data,null,1)],{type:"application/json"}),"Songbook backup","application/json",".json");
+  if(ok)toast("Backup saved: "+Object.keys(lists).length+" lists, "+Object.keys(songs).length+" songs.");
+}
+async function exportPDF(ids){
+  const area=document.getElementById("printArea");const parts=[];
+  for(const id of ids){
+    const l=store.lists.get(id);if(!l)continue;
+    const songs=(l.items||[]).map(sid=>[sid,store.songs.get(sid)]).filter(x=>x[1]);
+    parts.push(`<section class="p-cover"><h1>${esc(l.name||"Untitled list")}</h1><ol>${songs.map(([,s])=>`<li>${esc(s.title||"Untitled")}${s.artist?" · "+esc(s.artist):""}</li>`).join("")}</ol></section>`);
+    for(const [,s] of songs){
+      const k=s.key||detectKey(s.body);
+      parts.push(`<section class="p-song"><div class="p-head"><h2>${esc(s.title||"Untitled")}</h2><span>${[s.artist?esc(s.artist):"",k?"Key: "+esc(keyLabel(s,0,state.notation)||k):""].filter(Boolean).join(" · ")}</span></div><div class="sheet">${renderSheet(s,0)}</div></section>`);
+    }
+  }
+  area.innerHTML=parts.join("");
+  const oldTitle=document.title;
+  document.title="Songbook - "+ids.map(id=>(store.lists.get(id)||{}).name).filter(Boolean).join(", ")+" - "+stamp();
+  try{await document.fonts.ready}catch(e){}
+  const done=()=>{document.title=oldTitle;area.innerHTML="";window.removeEventListener("afterprint",done)};
+  window.addEventListener("afterprint",done);
+  setTimeout(()=>window.print(),50);
+}
+async function importBackup(file){
+  let data;
+  try{data=JSON.parse(await file.text())}catch(e){toast("That file is not a songbook backup.");return}
+  if(!data||typeof data!=="object"||(!data.songs&&!data.lists)){toast("That file is not a songbook backup.");return}
+  const songs=data.songs||{},lists=data.lists||{};
+  const valid=id=>/^[a-z0-9]{1,40}$/.test(id);
+  if(serverOK()){
+    try{const r=await api("POST","import",{songs,lists});toast("Imported "+r.lists+" lists and "+r.songs+" songs.")}
+    catch(e){writeError(e)}
+    return;
+  }
+  let ns=0,nl=0;
+  for(const [id,s] of Object.entries(songs)){if(!valid(id)||!s)continue;const cur=store.songs.get(id);if(!cur||(s.updatedAt||0)>(cur.updatedAt||0)){store.songs.set(id,s);ns++}}
+  for(const [id,l] of Object.entries(lists)){if(!valid(id)||!l)continue;const cur=store.lists.get(id);if(!cur||(l.updatedAt||0)>(cur.updatedAt||0)){store.lists.set(id,l);nl++}}
+  store.saveLocal();store.emit();toast("Imported "+nl+" lists and "+ns+" songs.");
+}
+$("#openExport").onclick=openExport;
+$("#exAll").onclick=()=>{document.querySelectorAll("#exLists input").forEach(i=>i.checked=true);exHint()};
+$("#exNone").onclick=()=>{document.querySelectorAll("#exLists input").forEach(i=>i.checked=false);exHint()};
+$("#exForm").addEventListener("change",exHint);
+$("#exGo").onclick=async()=>{
+  const ids=exSelected();if(!ids.length){toast("Choose at least one list.");return}
+  const fmt=document.querySelector('input[name="exFmt"]:checked').value;
+  document.getElementById("exportDlg").close();
+  if(fmt==="pdf")exportPDF(ids);else exportBackup(ids);
+};
+$("#imFile").onchange=async e=>{const f=e.target.files[0];if(!f)return;document.getElementById("exportDlg").close();await importBackup(f);e.target.value=""};
 
 /* ---------------- global wiring ---------------- */
 $("#brand").onclick=()=>go("#");$("#brand").onkeydown=e=>{if(e.key==="Enter")go("#")};

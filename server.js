@@ -231,15 +231,16 @@ async function songInfo(title, artist) {
 
 /* ---------------- http ---------------- */
 const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8",
-  ".json": "application/json", ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".webmanifest": "application/manifest+json" };
+  ".json": "application/json", ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".webmanifest": "application/manifest+json", ".otf": "font/otf", ".txt": "text/plain; charset=utf-8" };
 function send(res, code, obj) {
   res.writeHead(code, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
   res.end(obj === undefined ? "" : JSON.stringify(obj));
 }
-function readBody(req) {
+function readBody(req) { return readBodyLimit(req, 400_000); }
+function readBodyLimit(req, limit) {
   return new Promise((resolve, reject) => {
     let size = 0; const chunks = [];
-    req.on("data", c => { size += c.length; if (size > 400_000) { reject(new Error("too large")); req.destroy(); } else chunks.push(c); });
+    req.on("data", c => { size += c.length; if (size > limit) { reject(new Error("too large")); req.destroy(); } else chunks.push(c); });
     req.on("end", () => { try { resolve(JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}")); } catch (e) { reject(new Error("invalid JSON")); } });
     req.on("error", reject);
   });
@@ -279,6 +280,23 @@ const server = http.createServer(async (req, res) => {
       if (!authorized(req)) return send(res, 401, { error: "edit password required" });
       try { return send(res, 200, await readSong(url.searchParams.get("url") || "")); }
       catch (e) { return send(res, 502, { error: e.name === "AbortError" ? "the site took too long" : e.message }); }
+    }
+    if (p === "/api/import" && req.method === "POST") {
+      if (!authorized(req)) return send(res, 401, { error: "edit password required" });
+      const body = await readBodyLimit(req, 20_000_000);
+      let ns = 0, nl = 0;
+      for (const [id, d] of Object.entries(body.songs || {})) {
+        if (!/^[a-z0-9]{1,40}$/.test(id) || !d || typeof d !== "object") continue;
+        const cur = db.songs[id];
+        if (!cur || (Number(d.updatedAt) || 0) > (cur.updatedAt || 0)) { const c = cleanSong(d); c.updatedAt = Number(d.updatedAt) || Date.now(); db.songs[id] = c; ns++; }
+      }
+      for (const [id, d] of Object.entries(body.lists || {})) {
+        if (!/^[a-z0-9]{1,40}$/.test(id) || !d || typeof d !== "object") continue;
+        const cur = db.lists[id];
+        if (!cur || (Number(d.updatedAt) || 0) > (cur.updatedAt || 0)) { const c = cleanList(d); c.updatedAt = Number(d.updatedAt) || Date.now(); db.lists[id] = c; nl++; }
+      }
+      persist(); broadcast({ type: "state", songs: db.songs, lists: db.lists });
+      return send(res, 200, { songs: ns, lists: nl });
     }
     if (p === "/api/info" && req.method === "GET") {
       return send(res, 200, await songInfo((url.searchParams.get("title") || "").slice(0, 200), (url.searchParams.get("artist") || "").slice(0, 200)));
