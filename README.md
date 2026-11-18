@@ -5,6 +5,9 @@ Cançoner web per gestionar llistes de cançons amb la lletra i els acords a sob
 - **Cerca automàtica**: escrius títol i artista, i el servidor busca a la web (DuckDuckGo i Ultimate Guitar), obre la millor pàgina d'acords (Ultimate Guitar, Cifra Club, La Cuerda, E-Chords, AcordesWeb…) i n'extreu la lletra i els acords. Si la primera versió no t'agrada, en tries una altra de la llista.
 - **Transport de to**: puja o baixa semitons, amb bemolls o sostinguts segons la tonalitat. Pots desar la cançó en el to nou.
 - **Notació**: mostra els acords tal com estan escrits, en C D E o en Do Re Mi.
+- **Desplaçament automàtic**: el botó ▶ Scroll (o la barra espaiadora) fa baixar el text al ritme de la cançó. Comença quan arribes a la part baixa de la pantalla i acaba just al final de la cançó. La velocitat surt de la durada de la gravació original, que es busca automàticament. Amb − i + la pots ajustar de 5 en 5 segons. Si fas scroll a mà, continua des d'on l'hagis deixat. Mentre es desplaça, la pantalla no s'apaga.
+- **Enllaç a la gravació original**: cada cançó té un botó que porta a la versió original a YouTube (o Apple Music). Es pot canviar a l'editor.
+- **Aspecte de Real Book**: acords i lletra amb tipografia manuscrita, extensions dels acords elevades (C♯m⁷♭⁵) i seccions en requadre. Dues mides de lletra: Normal i Large.
 - **Compartit i editable**: tothom que obre la pàgina veu les mateixes llistes i cançons, i els canvis arriben en directe a totes les pantalles.
 - També accepta text enganxat a mà: acords sobre la lletra, ChordPro (`[G]paraula`) o còpies d'Ultimate Guitar.
 

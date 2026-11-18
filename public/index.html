@@ -7,18 +7,20 @@
 <meta name="theme-color" content="#0f6b5c">
 <title>Shared Songbook</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700&family=Permanent+Marker&family=Patrick+Hand&display=swap">
 <style>
 html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 body{margin:0}
 [hidden]{display:none!important}
-/* Layout: songbook sidebar (lists + library) beside a music-stand reading pane; chord sheets set in mono so chords stay over their syllables. */
+/* Layout: songbook sidebar (lists + library) beside a music-stand reading pane; chord sheets hand-lettered like a fake book, each chord pinned over its syllable. */
 :root{
   --bg:#f6f5f2; --panel:#ffffff; --ink:#1d2321; --muted:#5f6a66; --line:#dcdfdb;
   --accent:#0f6b5c; --accent-ink:#ffffff; --chord:#b4430f; --section:#0f6b5c; --soft:#e7efec; --danger:#b3261e; --warn:#fff4d6; --warn-ink:#5b4400;
   --f-display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --f-body:"Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --f-mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --f-chord:"Permanent Marker", "Marker Felt", "Comic Sans MS", cursive;
+  --f-lyric:"Patrick Hand", "Chalkboard SE", "Comic Sans MS", cursive;
   --r:8px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
@@ -81,10 +83,28 @@ textarea{font-family:var(--f-mono);font-size:13px;line-height:1.45;resize:vertic
 .seg button{border:none;border-radius:0;padding:6px 10px;font-size:13px}
 .seg button.on{background:var(--soft);color:var(--accent);font-weight:600}
 .sheet-wrap{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:22px}
-.sheet{font-family:var(--f-mono);font-size:var(--sheet-size,15px);line-height:1.35;margin:0;white-space:pre;tab-size:4}
-.sheet .cl{color:var(--chord);font-weight:700}
-.sheet .sec{color:var(--section);font-family:var(--f-display);font-weight:700;display:inline-block;margin-top:.6em}
-.sheet .gap{display:block;height:.5em}
+.sheet{font-family:var(--f-lyric);font-size:20px;line-height:1.2;margin:0;color:var(--ink)}
+.big .sheet{font-size:27px}
+.sheet .ln{display:flex;flex-wrap:wrap;align-items:flex-end;min-height:1.25em}
+.sheet .sg{display:inline-flex;flex-direction:column}
+.sheet .ch{font-family:var(--f-chord);color:var(--chord);font-size:1.2em;line-height:1.2;padding-right:.5em;white-space:nowrap;letter-spacing:.02em}
+.sheet .ch.nochord{padding-right:0}
+.sheet .ch .q,.sheet .ch sup{font-family:var(--f-lyric);font-weight:700}
+.sheet .ch .q{font-size:1.05em;margin-left:.02em}
+.sheet .ch sup{font-size:.62em;vertical-align:.5em;line-height:0;margin-left:.03em}
+.sheet .ly{white-space:pre}
+.sheet .chordonly{margin-block:.15em}
+.sheet .chordonly .ch{padding-right:1.2em}
+.sheet .plain{white-space:pre-wrap}
+.sheet .sec{font-family:var(--f-chord);color:var(--section);border:2px solid currentColor;border-radius:4px;padding:.05em .4em;display:inline-block;margin-top:.7em;margin-bottom:.15em;font-size:.95em;letter-spacing:.03em}
+.sheet .gap{height:.6em}
+.scrollctl{display:flex;align-items:center;gap:4px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:3px}
+.scrollctl button{border:none;border-radius:999px;height:30px;padding:0 10px}
+.scrollctl button.step{width:30px;padding:0;justify-content:center;font-size:17px;font-weight:600}
+.scrollctl .dur{font-family:var(--f-mono);font-size:13px;min-width:44px;text-align:center;font-variant-numeric:tabular-nums}
+.scrollctl #scPlay.on{background:var(--accent);color:var(--accent-ink)}
+.fab{position:fixed;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:20;width:56px;height:56px;border-radius:50%;justify-content:center;font-size:20px;background:var(--accent);color:var(--accent-ink);border:none;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.fab.off{background:var(--panel);color:var(--accent);border:1px solid var(--line)}
 .meta{color:var(--muted)}
 .empty{color:var(--muted);padding:24px;text-align:center;border:1px dashed var(--line);border-radius:12px}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
@@ -104,6 +124,8 @@ details summary{list-style-position:inside}
   .menu-toggle{display:inline-flex}
   main{padding-left:max(16px,env(safe-area-inset-left,0px))}
   .sheet-wrap{padding:14px}
+  .sheet{font-size:17px} .big .sheet{font-size:22px}
+  .sheetbar{position:static}
   .songrow{grid-template-columns:22px minmax(0,1fr) auto}
   .songrow .tools{grid-column:2 / -1}
 }
@@ -165,13 +187,13 @@ const store={
   loadLocal(){try{const d=JSON.parse(localStorage.getItem(LS_KEY)||"{}");this.songs=new Map(Object.entries(d.songs||{}));this.lists=new Map(Object.entries(d.lists||{}))}catch(e){}},
   saveLocal(){try{localStorage.setItem(LS_KEY,JSON.stringify({songs:Object.fromEntries(this.songs),lists:Object.fromEntries(this.lists)}))}catch(e){}},
   fill(d){this.songs=new Map(Object.entries(d.songs||{}));this.lists=new Map(Object.entries(d.lists||{}))},
-  async save(coll,id,data){
+  async save(coll,id,data,opts={}){
     data.updatedAt=Date.now();
     const map=coll==="songs"?this.songs:this.lists;const prev=map.get(id);
     map.set(id,data);this.emit();
     if(this.mode==="shared"){
       try{await api("PUT",coll+"/"+id,data)}
-      catch(e){if(prev)map.set(id,prev);else map.delete(id);this.emit();writeError(e);throw e}
+      catch(e){if(prev)map.set(id,prev);else map.delete(id);this.emit();if(!opts.quiet)writeError(e);throw e}
     } else this.saveLocal();
   },
   async remove(coll,id){
@@ -238,7 +260,7 @@ async function loadResult(i){
 const state={
   view:{type:"home"}, transpose:{}, readOnly:false,
   notation:(()=>{try{return localStorage.getItem("songbook-notation")||"auto"}catch(e){return "auto"}})(),
-  size:(()=>{try{return +localStorage.getItem("songbook-size")||15}catch(e){return 15}})(),
+  big:(()=>{try{return localStorage.getItem("songbook-big")==="1"}catch(e){return false}})(),
   find:{q:"",paste:"",title:"",artist:"",key:"",listId:"",busy:false},
   lastList:null
 };
@@ -257,6 +279,7 @@ function route(){
   else if((m=h.match(/^edit-([a-z0-9]+)$/)))state.view={type:"edit",id:m[1]};
   else state.view={type:"home"};
   if(state.view.type==="list")state.lastList=state.view.id;
+  if(!(state.view.type==="song"&&state.view.id===sc.id))scStop();
   if(state.view.type!=="edit"){main.dataset.editing="";editDraft=null}
   $("#side").classList.add("collapsed");$("#menuToggle").setAttribute("aria-expanded","false");
   render();window.scrollTo(0,0);
@@ -382,15 +405,116 @@ function renderLibrary(banner){
   if($("#blank"))$("#blank").onclick=newBlankSong;
 }
 
+/* Real Book style chord names: ♭/♯ symbols, extensions raised */
+function sym(x){return x.replace(/#/g,"♯").replace(/b(?=\d|$|\/|\))/g,"♭")}
+function chordHTML(t){
+  const m=t.match(/^([(\[]*)(.*?)([)\]\.,]*)$/)||["",'',t,''];
+  const r=m[2].match(/^(Do|Re|Mi|Fa|Sol|La|Si|DO|RE|MI|FA|SOL|LA|SI|[A-G])([#b]?)([^\/]*)(?:\/(.+))?$/);
+  if(!r)return esc(t);
+  const q=(r[3].match(/^(m(?!aj)|min|-)/)||[""])[0],ext=r[3].slice(q.length);
+  return esc(m[1])+esc(r[1]+sym(r[2]))+(q?'<span class="q">'+esc(q)+'</span>':"")+(ext?"<sup>"+esc(sym(ext))+"</sup>":"")+(r[4]?"/"+esc(r[4].replace(/^([A-G]|Do|Re|Mi|Fa|Sol|La|Si)([#b]?)/,(x,n,a)=>n+sym(a))):"")+esc(m[3]);
+}
+function chordToks(line,o){
+  const plain=o.semi===0&&o.notation==="auto";
+  return [...line.matchAll(/\S+/g)].map(m=>({pos:m.index,text:plain?m[0]:Chords.transposeTok(m[0],o),chord:Chords.isChordTok(m[0])}));
+}
+function chordCell(t){return t.chord?chordHTML(t.text):esc(t.text)}
+function pairHTML(toks,lyric){
+  const ly=lyric.padEnd(toks[toks.length-1].pos+1," ");const segs=[];
+  if(toks[0].pos>0)segs.push('<span class="sg"><span class="ch nochord">&nbsp;</span><span class="ly">'+esc(ly.slice(0,toks[0].pos))+'</span></span>');
+  toks.forEach((t,k)=>{const end=k+1<toks.length?toks[k+1].pos:ly.length;segs.push('<span class="sg"><span class="ch">'+chordCell(t)+'</span><span class="ly">'+(esc(ly.slice(t.pos,end))||" ")+'</span></span>')});
+  return '<div class="ln">'+segs.join("")+'</div>';
+}
 function renderSheet(song,semi){
   const o=sheetOpts(song,semi,state.notation);
-  const lines=(song.body||"").split("\n");
-  return lines.map(l=>{
-    if(!l.trim())return '<span class="gap"></span>';
-    if(isSection(l))return '<span class="sec">'+esc(l.trim().replace(/^\[|\]$/g,""))+'</span>';
-    if(isChordLine(l))return transposeChordLine(l,o).map(p=>p.chord?'<span class="cl">'+esc(p.text)+'</span>':esc(p.text)).join("");
-    return esc(l);
-  }).join("\n");
+  const lines=(song.body||"").split("\n");const out=[];
+  for(let i=0;i<lines.length;i++){
+    const l=lines[i];
+    if(!l.trim()){out.push('<div class="gap"></div>');continue}
+    if(isSection(l)){out.push('<div><span class="sec">'+esc(l.trim().replace(/^\[|\]$/g,"").replace(/:$/,""))+'</span></div>');continue}
+    if(isChordLine(l)){
+      const toks=chordToks(l,o),nx=lines[i+1];
+      if(nx!==undefined&&nx.trim()&&!isChordLine(nx)&&!isSection(nx)){out.push(pairHTML(toks,nx));i++}
+      else out.push('<div class="ln chordonly">'+toks.map(t=>'<span class="sg"><span class="ch">'+chordCell(t)+'</span></span>').join("")+'</div>');
+      continue;
+    }
+    out.push('<div class="ln plain">'+esc(l)+'</div>');
+  }
+  return out.join("");
+}
+
+/* ---------------- auto-scroll at the song's tempo ---------------- */
+const READ_AT=0.6; // reading line, as a share of the screen height
+const sc={raf:0,playing:false,elapsed:0,last:0,id:null,manualT:0,wake:null,sync:false};
+function fmtDur(t){t=Math.round(t);return Math.floor(t/60)+":"+String(t%60).padStart(2,"0")}
+function parseDur(v){v=String(v||"").trim();let m=v.match(/^(\d+):(\d{1,2})$/);if(m)return +m[1]*60+ +m[2];m=v.match(/^\d+$/);return m?+v:0}
+function scDuration(){const s=store.songs.get(sc.id);return (s&&s.duration)||210}
+function scGeom(){const el=main.querySelector(".sheet");if(!el)return null;const r=el.getBoundingClientRect();return {top:r.top+window.scrollY,h:Math.max(1,el.offsetHeight)}}
+function scSyncFromScroll(){
+  const g=scGeom();if(!g)return;
+  const t=Math.min(1,Math.max(0,(window.scrollY+READ_AT*innerHeight-g.top)/g.h))*scDuration();
+  sc.elapsed=window.scrollY<5?Math.min(sc.elapsed,t):t;
+}
+function scUpdateUI(){const f=document.getElementById("scFab");if(f){f.textContent=sc.playing?"❚❚":"▶";f.classList.toggle("off",!sc.playing)}const b=document.getElementById("scPlay");if(b){b.classList.toggle("on",sc.playing);b.textContent=sc.playing?"❚❚ Pause":"▶ Scroll";b.setAttribute("aria-pressed",String(sc.playing))}const d=document.getElementById("scDur");if(d)d.textContent=fmtDur(scDuration())}
+function scStop(){sc.playing=false;cancelAnimationFrame(sc.raf);if(sc.wake){sc.wake.release().catch(()=>{});sc.wake=null}scUpdateUI()}
+function scStart(){
+  const g=scGeom();if(!g)return;
+  if(window.scrollY+innerHeight>=document.documentElement.scrollHeight-2&&sc.elapsed>=scDuration()-1){window.scrollTo(0,0);sc.elapsed=0}
+  else scSyncFromScroll();
+  sc.playing=true;sc.last=performance.now();scUpdateUI();
+  try{navigator.wakeLock&&navigator.wakeLock.request("screen").then(l=>{sc.wake=l}).catch(()=>{})}catch(e){}
+  sc.raf=requestAnimationFrame(scTick);
+}
+function scTick(ts){
+  if(!sc.playing)return;
+  const dt=Math.min(0.25,(ts-sc.last)/1000);sc.last=ts;
+  if(performance.now()-sc.manualT<700){sc.sync=true}
+  else{
+    if(sc.sync){scSyncFromScroll();sc.sync=false}
+    sc.elapsed+=dt;
+    const g=scGeom(),dur=scDuration();if(!g){scStop();return}
+    const max=document.documentElement.scrollHeight-innerHeight;
+    const target=g.top+Math.min(1,sc.elapsed/dur)*g.h-READ_AT*innerHeight;
+    if(target>window.scrollY)window.scrollTo(0,Math.min(target,max));
+    if(sc.elapsed>=dur||(window.scrollY>=max-1&&target>=max)){scStop();return}
+  }
+  sc.raf=requestAnimationFrame(scTick);
+}
+["wheel","touchmove"].forEach(ev=>window.addEventListener(ev,()=>{sc.manualT=performance.now()},{passive:true}));
+window.addEventListener("keydown",e=>{
+  if(state.view.type!=="song"||/INPUT|TEXTAREA|SELECT|BUTTON/.test((document.activeElement||{}).tagName||""))return;
+  if(e.key===" "){e.preventDefault();sc.playing?scStop():scStart()}
+  else if(/Arrow|Page|Home|End/.test(e.key))sc.manualT=performance.now();
+});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&sc.playing&&!sc.wake){try{navigator.wakeLock.request("screen").then(l=>{sc.wake=l}).catch(()=>{})}catch(e){}}});
+let durSaveT=null;
+function changeDuration(id,delta){
+  const s=store.songs.get(id);if(!s)return;
+  const nd=Math.min(1200,Math.max(30,(s.duration||210)+delta));
+  const frac=sc.elapsed/(s.duration||210);
+  s.duration=nd;sc.elapsed=frac*nd;scUpdateUI();
+  clearTimeout(durSaveT);
+  durSaveT=setTimeout(()=>{const cur=store.songs.get(id);if(cur&&!state.readOnly)store.save("songs",id,{...cur,duration:nd},{quiet:true}).catch(()=>{})},1200);
+}
+
+/* ---------------- duration and original recording, looked up by the server ---------------- */
+const looked=new Set();
+async function lookupInfo(id){
+  const s=store.songs.get(id);
+  if(!s||!serverOK()||looked.has(id)||(s.duration&&s.link))return;
+  looked.add(id);
+  try{
+    const d=await api("GET","info?title="+encodeURIComponent(s.title||"")+"&artist="+encodeURIComponent(s.artist||""));
+    const cur=store.songs.get(id);if(!cur)return;
+    const upd={};
+    if(!cur.duration&&d.durationMs)upd.duration=Math.round(d.durationMs/1000);
+    if(!cur.link&&(d.youtubeUrl||d.appleUrl))upd.link=d.youtubeUrl||d.appleUrl;
+    if(Object.keys(upd).length)await store.save("songs",id,{...cur,...upd},{quiet:true});
+  }catch(e){}
+}
+function recordingLink(s){
+  if(s.link)return {url:s.link,label:/youtube|youtu\.be/.test(s.link)?"▶ Original recording":"♫ Original recording"};
+  return {url:"https://www.youtube.com/results?search_query="+encodeURIComponent([s.title,s.artist].filter(Boolean).join(" ")),label:"▶ Find the recording on YouTube"};
 }
 
 function renderSong(banner,id){
@@ -404,11 +528,15 @@ function renderSong(banner,id){
   const now=keyLabel(s,semi,state.notation);
   const inLists=[...store.lists.entries()].filter(([,l])=>(l.items||[]).includes(id));
   const notIn=[...store.lists.entries()].filter(([,l])=>!(l.items||[]).includes(id));
+  if(sc.id!==id){scStop();sc.id=id;sc.elapsed=0}
+  lookupInfo(id);
+  const rec=recordingLink(s);
   main.innerHTML=`<div class="page" style="max-width:1000px">${banner}
     <div class="stack" style="gap:4px">
       ${pos>=0?`<a class="hint" href="#list-${state.lastList}" style="color:var(--accent)">← ${esc(list.name)} · song ${pos+1} of ${items.length}</a>`:""}
       <h1>${esc(s.title||"Untitled")}</h1>
       <div class="meta">${[s.artist?esc(s.artist):"",orig?`Original key <span class="keychip">${esc(orig)}</span>`:"",inLists.length?`In ${inLists.map(([lid,l])=>`<a href="#list-${lid}" style="color:var(--accent)">${esc(l.name)}</a>`).join(", ")}`:""].filter(Boolean).join(" · ")}</div>
+      <div class="row" style="margin-top:6px"><a class="btn" href="${esc(rec.url)}" target="_blank" rel="noopener">${esc(rec.label)} ↗</a></div>
     </div>
     <div class="sheetbar">
       <div class="row">
@@ -421,11 +549,18 @@ function renderSong(banner,id){
         ${semi&&!state.readOnly?`<button id="tSave" title="Rewrite the song's chords in this key for everyone">Save in this key</button>`:""}
       </div>
       <div class="row">
-        <div class="seg" role="group" aria-label="Text size"><button id="szDown" aria-label="Smaller text">A−</button><button id="szUp" aria-label="Larger text">A+</button></div>
+        <div class="scrollctl" role="group" aria-label="Auto-scroll">
+          <button id="scPlay" aria-pressed="false" title="Scroll through the song at its tempo (space bar)">▶ Scroll</button>
+          <button class="step" id="scSlower" aria-label="Slower: song lasts 5 seconds longer" title="Slower">−</button>
+          <span class="dur" id="scDur" title="Song length used for scrolling">${fmtDur(s.duration||210)}</span>
+          <button class="step" id="scFaster" aria-label="Faster: song lasts 5 seconds less" title="Faster">+</button>
+        </div>
+        <div class="seg" role="group" aria-label="Text size"><button id="szN" class="${state.big?"":"on"}" aria-pressed="${!state.big}">Normal</button><button id="szL" class="${state.big?"on":""}" aria-pressed="${state.big}">Large</button></div>
         ${state.readOnly?"":`<button id="edit">Edit</button>`}
       </div>
     </div>
-    <div class="sheet-wrap"><pre class="sheet" style="--sheet-size:${state.size}px">${renderSheet(s,semi)}</pre></div>
+    <div class="sheet-wrap ${state.big?"big":""}"><div class="sheet">${renderSheet(s,semi)}</div></div>
+    <button class="fab off" id="scFab" aria-label="Start or pause auto-scroll" title="Auto-scroll (space bar)">▶</button>
     <div class="row" style="justify-content:space-between">
       <div class="row">${prev?`<button data-nav="${prev}">← ${esc((store.songs.get(prev)||{}).title||"Previous")}</button>`:""}${next?`<button data-nav="${next}">${esc((store.songs.get(next)||{}).title||"Next")} →</button>`:""}</div>
       ${!state.readOnly&&notIn.length?`<select id="addToList" style="max-width:260px" aria-label="Add this song to a list"><option value="">Add to a list…</option>${notIn.map(([lid,l])=>`<option value="${lid}">${esc(l.name)}</option>`).join("")}</select>`:""}
@@ -440,8 +575,11 @@ function renderSong(banner,id){
     const nb=transposeBody(s.body,o);const nk=keyLabel(s,semi,"auto");
     try{await store.save("songs",id,{...s,body:nb,key:nk});state.transpose[id]=0;toast("Saved in "+nk+" for everyone.")}catch(e){}
   };
-  const setSize=d=>{state.size=Math.min(28,Math.max(10,state.size+d));try{localStorage.setItem("songbook-size",state.size)}catch(e){};main.querySelector(".sheet").style.setProperty("--sheet-size",state.size+"px")};
-  $("#szUp").onclick=()=>setSize(1);$("#szDown").onclick=()=>setSize(-1);
+  const setBig=v=>{state.big=v;try{localStorage.setItem("songbook-big",v?"1":"0")}catch(e){};main.querySelector(".sheet-wrap").classList.toggle("big",v);$("#szN").classList.toggle("on",!v);$("#szL").classList.toggle("on",v);$("#szN").setAttribute("aria-pressed",String(!v));$("#szL").setAttribute("aria-pressed",String(v))};
+  $("#szN").onclick=()=>setBig(false);$("#szL").onclick=()=>setBig(true);
+  $("#scPlay").onclick=$("#scFab").onclick=()=>{sc.playing?scStop():scStart()};
+  $("#scSlower").onclick=()=>changeDuration(id,5);$("#scFaster").onclick=()=>changeDuration(id,-5);
+  scUpdateUI();
   if($("#edit"))$("#edit").onclick=()=>go("#edit-"+id);
   main.querySelectorAll("[data-nav]").forEach(b=>b.onclick=()=>go("#song-"+b.dataset.nav));
   if($("#addToList"))$("#addToList").onchange=async e=>{const lid=e.target.value;const l=store.lists.get(lid);if(l){try{await store.save("lists",lid,{...l,items:[...(l.items||[]),id]});toast("Added to "+l.name+".")}catch(_){}}};
@@ -452,7 +590,7 @@ function renderEdit(banner,id){
   const s=store.songs.get(id);
   if(!s){main.innerHTML=`<div class="page">${banner}<div class="empty">${store.mode==="pending"?"Loading…":"This song does not exist or was deleted."}</div></div>`;return}
   if(state.readOnly){go("#song-"+id);return}
-  if(!editDraft||editDraft.id!==id)editDraft={id,base:s.updatedAt,title:s.title||"",artist:s.artist||"",key:s.key||"",body:s.body||"",source:s.source||""};
+  if(!editDraft||editDraft.id!==id)editDraft={id,base:s.updatedAt,title:s.title||"",artist:s.artist||"",key:s.key||"",body:s.body||"",source:s.source||"",dur:s.duration?fmtDur(s.duration):"",link:s.link||""};
   // keep typing intact on live updates: only render once per song open
   if(main.dataset.editing===id){
     const w=$("#editWarn");if(w)w.hidden=!(s.updatedAt&&s.updatedAt!==editDraft.base);
@@ -467,6 +605,8 @@ function renderEdit(banner,id){
       <label class="stack" style="gap:4px"><span class="label">Artist</span><input id="eArtist" value="${esc(editDraft.artist)}"></label>
       <label class="stack" style="gap:4px"><span class="label">Key</span><input id="eKey" value="${esc(editDraft.key)}" placeholder="e.g. G or Em"></label>
       <label class="stack" style="gap:4px"><span class="label">Source link</span><input id="eSource" value="${esc(editDraft.source)}" placeholder="Where the chords came from"></label>
+      <label class="stack" style="gap:4px"><span class="label">Length (m:ss)</span><input id="eDur" value="${esc(editDraft.dur)}" placeholder="e.g. 3:45, sets the scroll speed" inputmode="numeric"></label>
+      <label class="stack" style="gap:4px"><span class="label">Original recording link</span><input id="eLink" value="${esc(editDraft.link)}" placeholder="YouTube, Spotify, Apple Music…"></label>
     </div>
     <label class="stack" style="gap:4px"><span class="label">Lyrics and chords</span>
       <textarea id="eBody" rows="22" spellcheck="false">${esc(editDraft.body)}</textarea></label>
@@ -474,13 +614,13 @@ function renderEdit(banner,id){
     <div class="row" style="justify-content:space-between"><button id="conv">Convert ChordPro / pasted format</button><button class="danger" id="delSong">Delete song everywhere</button></div>
   </div>`;
   const bind=(sel,k)=>{$(sel).oninput=e=>editDraft[k]=e.target.value};
-  bind("#eTitle","title");bind("#eArtist","artist");bind("#eKey","key");bind("#eBody","body");bind("#eSource","source");
+  bind("#eTitle","title");bind("#eArtist","artist");bind("#eKey","key");bind("#eBody","body");bind("#eSource","source");bind("#eDur","dur");bind("#eLink","link");
   const leave=()=>{main.dataset.editing="";editDraft=null;go("#song-"+id)};
   $("#cancel").onclick=leave;
   $("#conv").onclick=()=>{const r=importText(editDraft.body);editDraft.body=r.body;$("#eBody").value=r.body;if(!editDraft.title&&r.title){editDraft.title=r.title;$("#eTitle").value=r.title}if(!editDraft.key&&r.key){editDraft.key=r.key;$("#eKey").value=r.key}};
   $("#save").onclick=async()=>{
     const cur=store.songs.get(id)||{};
-    try{await store.save("songs",id,{...cur,title:editDraft.title.trim()||"Untitled",artist:editDraft.artist.trim(),key:editDraft.key.trim(),body:editDraft.body.replace(/\s+$/,""),source:editDraft.source.trim()});toast("Saved.");leave()}catch(e){}
+    try{await store.save("songs",id,{...cur,title:editDraft.title.trim()||"Untitled",artist:editDraft.artist.trim(),key:editDraft.key.trim(),body:editDraft.body.replace(/\s+$/,""),source:editDraft.source.trim(),duration:parseDur(editDraft.dur)||0,link:editDraft.link.trim()});toast("Saved.");leave()}catch(e){}
   };
   armable($("#delSong"),"Click again to delete everywhere",async()=>{
     try{
@@ -535,7 +675,7 @@ function renderFind(banner){
         <label class="stack" style="gap:4px"><span class="label">Add to list</span><select id="fList"><option value="">Library only</option>${lists.map(([id,l])=>`<option value="${id}" ${f.listId===id?"selected":""}>${esc(l.name)}</option>`).join("")}</select></label>
       </div>
       <label class="stack" style="gap:4px"><span class="label">Source link (optional)</span><input id="fSource" placeholder="Paste the page address you copied from" value="${esc(f.source||"")}"></label>
-      <div class="stack" style="gap:6px"><span class="label">Preview</span><div class="sheet-wrap" style="max-height:420px;overflow:auto"><pre class="sheet" id="preview" style="--sheet-size:14px"></pre></div></div>
+      <div class="stack" style="gap:6px"><span class="label">Preview</span><div class="sheet-wrap" style="max-height:420px;overflow:auto"><div class="sheet" id="preview"></div></div></div>
       <div class="row"><button class="primary" id="saveNew">Save song</button><button class="ghost" id="clear">Clear</button></div>
     </div>`}
   </div>`;

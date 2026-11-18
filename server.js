@@ -51,7 +51,9 @@ const str = (v, max) => (typeof v === "string" ? v.slice(0, max) : "");
 const num = v => (Number.isFinite(v) ? v : Date.now());
 function cleanSong(d) {
   return { title: str(d.title, 200) || "Untitled", artist: str(d.artist, 200), key: str(d.key, 20), body: str(d.body, 100000),
-    source: str(d.source, 1000), createdAt: num(d.createdAt), updatedAt: Date.now() };
+    source: str(d.source, 1000), createdAt: num(d.createdAt), updatedAt: Date.now(),
+    duration: Number.isFinite(d.duration) && d.duration > 0 && d.duration <= 3600 ? Math.round(d.duration) : 0,
+    link: /^https?:\/\//.test(d.link || "") ? str(d.link, 1000) : "" };
 }
 function cleanList(d) {
   const items = Array.isArray(d.items) ? d.items.filter(x => typeof x === "string" && /^[a-z0-9]{1,40}$/.test(x)).slice(0, 500) : [];
@@ -199,6 +201,34 @@ async function search(q) {
   return rank(items);
 }
 
+/* Song length (iTunes Search API) and a link to the original recording (YouTube) */
+const infoCache = new Map();
+async function songInfo(title, artist) {
+  const term = [title, artist].filter(Boolean).join(" ").trim();
+  if (!term) return {};
+  if (infoCache.has(term)) return infoCache.get(term);
+  const out = { durationMs: 0, appleUrl: "", youtubeUrl: "" };
+  const norm = x => String(x || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\(.*?\)|[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+  const [it, yt] = await Promise.allSettled([
+    getPage("https://itunes.apple.com/search?media=music&entity=song&limit=10&term=" + encodeURIComponent(term)).then(JSON.parse),
+    getPage("https://www.youtube.com/results?search_query=" + encodeURIComponent(term)),
+  ]);
+  if (it.status === "fulfilled" && Array.isArray(it.value.results) && it.value.results.length) {
+    const t = norm(title), a = norm(artist);
+    const res = it.value.results;
+    const pick = res.find(r => norm(r.trackName) === t && (!a || norm(r.artistName).includes(a) || a.includes(norm(r.artistName))))
+      || res.find(r => norm(r.trackName).includes(t)) || res[0];
+    out.durationMs = pick.trackTimeMillis || 0;
+    out.appleUrl = pick.trackViewUrl || "";
+  }
+  if (yt.status === "fulfilled") {
+    const m = yt.value.match(/"videoId":"([\w-]{11})"/);
+    if (m) out.youtubeUrl = "https://www.youtube.com/watch?v=" + m[1];
+  }
+  infoCache.set(term, out);
+  return out;
+}
+
 /* ---------------- http ---------------- */
 const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8",
   ".json": "application/json", ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon", ".webmanifest": "application/manifest+json" };
@@ -249,6 +279,9 @@ const server = http.createServer(async (req, res) => {
       if (!authorized(req)) return send(res, 401, { error: "edit password required" });
       try { return send(res, 200, await readSong(url.searchParams.get("url") || "")); }
       catch (e) { return send(res, 502, { error: e.name === "AbortError" ? "the site took too long" : e.message }); }
+    }
+    if (p === "/api/info" && req.method === "GET") {
+      return send(res, 200, await songInfo((url.searchParams.get("title") || "").slice(0, 200), (url.searchParams.get("artist") || "").slice(0, 200)));
     }
     if (p.startsWith("/api/")) return send(res, 404, { error: "not found" });
 
